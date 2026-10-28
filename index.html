@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2f6f8f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Karriärum">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<title>Karriärum 2026 – Möbeldesign</title>
+<style>
+  :root {
+    --bg: #f6f7f4;
+    --surface: #ffffff;
+    --ink: #1d2428;
+    --muted: #5d6a70;
+    --line: #dde2e0;
+    --strong: #d9695c;
+    --strong-bg: #fbe9e6;
+    --maybe: #2f6f8f;
+    --pot: #b9801a;
+    --pot-bg: #fbf0d9;
+    --maybe-bg: #e3eef4;
+    --accent: #2f6f8f;
+    --done: #9aa5a9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14191c;
+      --surface: #1d2428;
+      --ink: #eef1f0;
+      --muted: #9fadb3;
+      --line: #2d373c;
+      --strong: #ee8a7e;
+      --strong-bg: #3a2522;
+      --maybe: #7fb8d4;
+      --pot: #e6b25a;
+      --pot-bg: #3a2f17;
+      --maybe-bg: #1f2f38;
+      --accent: #7fb8d4;
+      --done: #647177;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: 130px; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif;
+    line-height: 1.45;
+    padding: env(safe-area-inset-top, 0) 0 env(safe-area-inset-bottom, 0);
+  }
+  header {
+    padding: 22px 18px 14px;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  h1 {
+    margin: 0 0 4px;
+    font-size: 1.7rem;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+  header p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+
+  .sticky {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    padding: 10px 18px 12px;
+  }
+  .sticky-inner { max-width: 640px; margin: 0 auto; }
+  .progress-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 0.9rem; margin-bottom: 6px;
+  }
+  .progress-row strong { font-size: 1.05rem; }
+  .bar { height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; }
+  .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .25s; }
+  .filters { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+  .flabel { font-size: 0.78rem; color: var(--muted); font-weight: 600; }
+  .filters + .filters { margin-top: 8px; }
+  .filters button {
+    font: inherit; font-size: 0.85rem;
+    padding: 6px 12px; border-radius: 99px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+    cursor: pointer;
+  }
+  .filters button[aria-pressed="true"] {
+    background: var(--ink); color: var(--bg); border-color: var(--ink);
+  }
+
+  main { max-width: 640px; margin: 0 auto; padding: 14px 18px 60px; }
+  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+
+  .item {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .item[hidden] { display: none; }
+  .num {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.7rem; font-weight: 800; letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+  }
+  .item.strong .num { background: var(--strong-bg); color: var(--strong); }
+  .item.maybe .num { background: var(--maybe-bg); color: var(--maybe); }
+  .body { padding: 12px 14px; min-width: 0; }
+  .top { display: flex; gap: 10px; align-items: flex-start; }
+  .top label { flex: 1; cursor: pointer; }
+  .name { font-weight: 700; font-size: 1.02rem; }
+  .why { color: var(--muted); font-size: 0.88rem; margin-top: 1px; }
+  .tag { font-size: 0.78rem; font-weight: 600; margin-top: 4px; display: inline-block; }
+  .item.pot .num { background: var(--pot-bg); color: var(--pot); }
+  .pot .tag { color: var(--pot); }
+  .strong .tag { color: var(--strong); }
+  .maybe .tag { color: var(--maybe); }
+
+  input[type="checkbox"] {
+    appearance: none; -webkit-appearance: none;
+    width: 28px; height: 28px; flex: none; margin: 0;
+    border: 2px solid var(--muted); border-radius: 7px;
+    display: grid; place-content: center; cursor: pointer;
+    background: var(--surface);
+  }
+  input[type="checkbox"]:checked { background: var(--accent); border-color: var(--accent); }
+  input[type="checkbox"]:checked::after {
+    content: ""; width: 7px; height: 13px;
+    border: solid #fff; border-width: 0 3px 3px 0;
+    transform: rotate(45deg) translate(-1px, -1px);
+  }
+  input[type="checkbox"]:focus-visible, button:focus-visible, textarea:focus-visible {
+    outline: 3px solid var(--accent); outline-offset: 2px;
+  }
+  .item.done .name { text-decoration: line-through; color: var(--done); }
+  .item.done .why, .item.done .tag { opacity: .55; }
+
+  textarea {
+    width: 100%; margin-top: 8px;
+    font: inherit; font-size: 0.9rem;
+    color: var(--ink); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 7px;
+    padding: 7px 9px; resize: vertical; min-height: 38px;
+  }
+  .reset {
+    display: block; margin: 26px auto 0;
+    font: inherit; font-size: 0.85rem; color: var(--muted);
+    background: none; border: none; text-decoration: underline; cursor: pointer;
+  }
+  .num { border: none; font-family: inherit; cursor: pointer; flex-direction: column; gap: 2px; }
+  .num small { font-size: 0.62rem; font-weight: 600; letter-spacing: 0; opacity: .85; }
+  .num:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+  .filters .mapbtn { margin-left: auto; background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .mapview {
+    position: fixed; inset: 0; z-index: 20;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    padding-top: env(safe-area-inset-top, 0);
+  }
+  .mapview[hidden] { display: none; }
+  .maptop {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px; border-bottom: 1px solid var(--line);
+  }
+  .maptop strong { font-size: 1.05rem; }
+  .maptop button, .mapbar button {
+    font: inherit; font-size: 0.9rem; padding: 7px 14px;
+    border-radius: 99px; border: 1px solid var(--line);
+    background: var(--surface); color: var(--ink); cursor: pointer;
+  }
+  .zoom { display: flex; gap: 6px; }
+  .zoom button { min-width: 40px; font-weight: 700; }
+  .mapscroll { flex: 1; display: flex; overflow: auto; touch-action: pan-x pan-y; background: #e9edf0; }
+  .mapwrap { position: relative; width: 1100px; flex: none; margin: auto; }
+  .mapwrap svg { display: block; width: 100%; height: auto; }
+  .pin[hidden] { display: none; }
+  .pin {
+    position: absolute; transform: translate(-50%, -50%);
+    min-width: 26px; height: 26px; padding: 0 5px;
+    border-radius: 99px; border: 2px solid #fff;
+    font: inherit; font-size: 0.72rem; font-weight: 800; color: #fff;
+    cursor: pointer; display: grid; place-items: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,.45);
+  }
+  .pin.strong { background: #d9695c; }
+  .pin.maybe { background: #2f6f8f; }
+  .pin.pot { background: #b9801a; }
+  .pin.done { background: #7d898d; }
+  .pin.sel {
+    z-index: 3; min-width: 40px; height: 40px; font-size: 0.95rem;
+    outline: 3px solid #1d2428; outline-offset: 2px;
+    animation: ping 1.4s ease-out 3;
+  }
+  @keyframes ping {
+    0% { box-shadow: 0 0 0 0 rgba(47,111,143,.8); }
+    100% { box-shadow: 0 0 0 22px rgba(47,111,143,0); }
+  }
+  @media (prefers-reduced-motion: reduce) { .pin.sel { animation: none; } }
+  .mapbar {
+    display: flex; align-items: center; gap: 10px; justify-content: space-between;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0));
+    border-top: 1px solid var(--line); background: var(--surface);
+  }
+  .mapbar .cap { min-width: 0; }
+  .mapbar .cap b { display: block; font-size: 1rem; }
+  .mapbar .cap span { color: var(--muted); font-size: 0.82rem; }
+  .mapnote { color: var(--muted); font-size: 0.78rem; padding: 6px 16px; background: var(--bg); border-top: 1px solid var(--line); }
+  .empty { text-align: center; color: var(--muted); padding: 30px 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Karriärum 2026</h1>
+  <p>Välj utbildning för att se vilka företag som söker just den. Maskin (Mechanical Engineering) innehåller produktutveckling med möbeldesign. Röda är möbel och inredning, gula är möjligen möbel.</p>
+</header>
+
+<div class="sticky">
+  <div class="sticky-inner">
+    <div class="progress-row">
+      <span><strong id="count">0 av 0</strong> besökta</span>
+      <span id="pct">0 %</span>
+    </div>
+    <div class="bar"><div id="fill"></div></div>
+    <div class="filters" role="group" aria-label="Utbildning" id="progfilters">
+      <span class="flabel">Utbildning</span>
+      <button data-prog="mobel" aria-pressed="false">Möbel</button>
+      <button data-prog="alla" aria-pressed="false">Alla</button>
+      <button data-prog="bygg" aria-pressed="false">Bygg</button>
+      <button data-prog="data" aria-pressed="false">Data/IT</button>
+      <button data-prog="industri" aria-pressed="false">Industri</button>
+      <button data-prog="maskin" aria-pressed="true">Maskin</button>
+    </div>
+    <div class="filters" role="group" aria-label="Visa" id="statusfilters">
+      <button data-status="all" aria-pressed="true">Alla</button>
+      <button data-status="extra" aria-pressed="false">Extra viktiga</button>
+      <button data-status="todo" aria-pressed="false">Ej besökta</button>
+      <button type="button" class="mapbtn" id="openmap">Karta</button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <ul id="list"></ul>
+  <p class="empty" id="empty" hidden>Inga företag matchar filtret.</p>
+  <button class="reset" id="reset">Nollställ allt</button>
+</main>
+
+<div class="mapview" id="mapview" hidden role="dialog" aria-label="Karta över montrarna">
+  <div class="maptop">
+    <strong>Karta</strong>
+    <div class="zoom">
+      <button type="button" id="zout" aria-label="Zooma ut">−</button>
+      <button type="button" id="zfit" aria-label="Anpassa till skärmen">Passa</button>
+      <button type="button" id="zin" aria-label="Zooma in">+</button>
+    </div>
+    <button type="button" id="closemap">Stäng</button>
+  </div>
+  <div class="mapscroll" id="mapscroll">
+    <div class="mapwrap" id="mapwrap">
+      <svg viewBox="0 14 725 485" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Planritning över mässan" font-family="Avenir Next, Segoe UI, system-ui, sans-serif"><rect x="0" y="0" width="725" height="585" fill="#e9edf0"/><polygon points="215,385 230,355 312,355 312,437 262,459" fill="#7b868b"/><polygon points="8,42 25,29 211,29 211,115 247,115 247,247 314,247 314,51 378,51 378,115 415,115 415,247 480,247 480,51 544,51 544,115 581,115 646,115 646,29 710,29 710,115 725,115 725,444 312,444 312,357 246,357 170,365 123,292 67,203 48,216 32,193 83,157 8,42" fill="#fbfaf6" stroke="#9aa6a9" stroke-width="2.5" stroke-linejoin="round"/><polygon points="123,292 246,292 246,357 170,365 158,345" fill="#7b868b"/><rect x="127" y="115" width="120" height="132" rx="3" fill="#7b868b"/><rect x="314" y="51" width="64" height="64" rx="3" fill="#7b868b"/><rect x="314" y="115" width="101" height="153" rx="3" fill="#7b868b"/><rect x="480" y="51" width="64" height="64" rx="3" fill="#7b868b"/><rect x="480" y="115" width="25" height="153" rx="3" fill="#7b868b"/><rect x="519" y="115" width="62" height="153" rx="3" fill="#7b868b"/><rect x="646" y="29" width="64" height="86" rx="3" fill="#7b868b"/><rect x="646" y="115" width="38" height="153" rx="3" fill="#7b868b"/><rect x="684" y="115" width="41" height="153" rx="3" fill="#7b868b"/><rect x="340" y="292" width="74" height="66" rx="3" fill="#7b868b"/><rect x="479" y="292" width="39" height="66" rx="3" fill="#7b868b"/><rect x="648" y="292" width="24" height="41" rx="3" fill="#7b868b"/><line x1="127" y1="29" x2="127" y2="100" stroke="#9aa6a9" stroke-width="2"/><line x1="399" y1="375" x2="399" y2="444" stroke="#9aa6a9" stroke-width="2"/><line x1="494" y1="375" x2="494" y2="444" stroke="#9aa6a9" stroke-width="2"/><line x1="581" y1="375" x2="581" y2="444" stroke="#9aa6a9" stroke-width="2"/><line x1="399" y1="375" x2="581" y2="375" stroke="#9aa6a9" stroke-width="2" stroke-dasharray="14 8"/><line x1="312" y1="375" x2="399" y2="375" stroke="#9aa6a9" stroke-width="2" stroke-dasharray="14 8"/><rect x="127" y="153" width="21" height="64" rx="2" fill="#1f2a30"/><rect x="314" y="247" width="25" height="24" rx="2" fill="#1f2a30"/><text x="326.5" y="262.0" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">WC</text><rect x="480" y="247" width="25" height="24" rx="2" fill="#1f2a30"/><text x="492.5" y="262.0" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">WC</text><rect x="646" y="247" width="26" height="24" rx="2" fill="#1f2a30"/><text x="659.0" y="262.0" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">WC</text><rect x="389" y="332" width="25" height="26" rx="2" fill="#1f2a30"/><text x="401.5" y="348.0" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">WC</text><rect x="501" y="339" width="17" height="19" rx="2" fill="#1f2a30"/><rect x="648" y="333" width="24" height="25" rx="2" fill="#1f2a30"/><text x="660.0" y="348.5" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">WC</text><rect x="285" y="292" width="28" height="22" rx="2" fill="#fff" stroke="#9aa6a9"/><line x1="289.5" y1="294" x2="289.5" y2="312" stroke="#9aa6a9" stroke-width="1"/><line x1="294.0" y1="294" x2="294.0" y2="312" stroke="#9aa6a9" stroke-width="1"/><line x1="298.5" y1="294" x2="298.5" y2="312" stroke="#9aa6a9" stroke-width="1"/><line x1="303.0" y1="294" x2="303.0" y2="312" stroke="#9aa6a9" stroke-width="1"/><line x1="307.5" y1="294" x2="307.5" y2="312" stroke="#9aa6a9" stroke-width="1"/><rect x="415" y="292" width="28" height="22" rx="2" fill="#fff" stroke="#9aa6a9"/><line x1="419.5" y1="294" x2="419.5" y2="312" stroke="#9aa6a9" stroke-width="1"/><line x1="424.0" y1="294" x2="424.0" y2="312" stroke="#9aa6a9" stroke-width="1"/><line x1="428.5" y1="294" x2="428.5" y2="312" stroke="#9aa6a9" stroke-width="1"/><line x1="433.0" y1="294" x2="433.0" y2="312" stroke="#9aa6a9" stroke-width="1"/><line x1="437.5" y1="294" x2="437.5" y2="312" stroke="#9aa6a9" stroke-width="1"/><rect x="580" y="292" width="28" height="22" rx="2" fill="#fff" stroke="#9aa6a9"/><line x1="584.5" y1="294" x2="584.5" y2="312" stroke="#9aa6a9" stroke-width="1"/><line x1="589.0" y1="294" x2="589.0" y2="312" stroke="#9aa6a9" stroke-width="1"/><line x1="593.5" y1="294" x2="593.5" y2="312" stroke="#9aa6a9" stroke-width="1"/><line x1="598.0" y1="294" x2="598.0" y2="312" stroke="#9aa6a9" stroke-width="1"/><line x1="602.5" y1="294" x2="602.5" y2="312" stroke="#9aa6a9" stroke-width="1"/><circle cx="64" cy="100" r="11" fill="#fff" stroke="#9aa6a9"/><circle cx="64" cy="100" r="4" fill="#9aa6a9"/><rect x="596" y="441" width="32" height="6" fill="#fbfaf6"/><path d="M612 478 L612 452 M604 460 L612 451 L620 460" stroke="#2f6f8f" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><text x="612" y="492" text-anchor="middle" font-size="12" font-weight="800" fill="#2f6f8f">INGÅNG</text></svg>
+    </div>
+  </div>
+  <div class="mapnote">Schematisk karta. Placeringarna är uppskattade, så dubbelkolla med mässans egen karta. Zooma med + och − eller genom att nypa.</div>
+  <div class="mapbar">
+    <div class="cap"><b id="capname">Tryck på en monter</b><span id="capwhy">Röd är möbel/inredning, gul är möjligen möbel, blå är övriga.</span></div>
+    <button type="button" id="capdone" hidden>Bocka av</button>
+  </div>
+</div>
+
+<script>
+  var PL = { bygg: "Bygg", data: "Data/IT", industri: "Industri", maskin: "Maskin" };
+  function progLabel(c) { return c.p.length ? c.p.map(function (k) { return PL[k]; }).join(" · ") : "Utbildning okänd"; }
+  var companies = [
+    { n: 1, name: "Lear Corporation Sweden AB", why: "Bilstolar, sittdesign och textil", p: ["data", "maskin"], x: 2 },
+    { n: 2, name: "Thule", why: "Bärsystem och tillbehör", p: ["data", "industri", "maskin"], x: 2 },
+    { n: 3, name: "Fagerhult Belysning AB", why: "Belysning och armaturer", p: ["bygg", "data", "industri", "maskin"], x: 1 },
+    { n: 4, name: "Daloc AB", why: "", p: ["industri", "maskin"], x: 0 },
+    { n: 5, name: "Jönköping Energi", why: "Energibolag", p: ["bygg", "data", "industri", "maskin"], x: 0 },
+    { n: 6, name: "Peab Sverige AB", why: "Byggföretag", p: ["bygg"], x: 0 },
+    { n: 7, name: "International Office", why: "", p: ["bygg", "data", "industri", "maskin"], x: 0 },
+    { n: 8, name: "Jönköpings kommun, Stadsbyggnadskontoret", why: "", p: ["bygg"], x: 0 },
+    { n: 9, name: "Jönköpings kommun, Tekniska kontoret", why: "", p: ["bygg"], x: 0 },
+    { n: 10, name: "Attends Healthcare AB", why: "", p: [], x: 0 },
+    { n: 11, name: "Prysmian", why: "Kabel", p: ["industri", "maskin"], x: 0 },
+    { n: 12, name: "CGI Sverige AB", why: "IT-konsult", p: ["industri"], x: 0 },
+    { n: 13, name: "Qtech Group", why: "", p: ["data"], x: 0 },
+    { n: 14, name: "ByggDialog AB", why: "", p: ["data", "industri", "maskin"], x: 0 },
+    { n: 15, name: "Skanska Sverige AB", why: "Bygg och anläggning", p: ["bygg"], x: 0 },
+    { n: 16, name: "Scania CV AB", why: "Lastbilar och motorer", p: ["bygg", "industri"], x: 0 },
+    { n: 17, name: "Telia / Telia Cygate", why: "Telekom", p: ["data", "industri", "maskin"], x: 0 },
+    { n: 18, name: "Saab", why: "Försvar och säkerhet", p: ["data"], x: 0 },
+    { n: 19, name: "AP&T Group", why: "Pressar och plåtformning", p: ["data", "industri", "maskin"], x: 0 },
+    { n: 20, name: "Combitech AB", why: "Produktutvecklingskonsult", p: ["data", "industri", "maskin"], x: 2 },
+    { n: 21, name: "JSC it-partner", why: "", p: ["data"], x: 0 },
+    { n: 22, name: "Sigma Industry South AB", why: "", p: ["data"], x: 0 },
+    { n: 23, name: "Framtiden AB", why: "", p: ["bygg", "data", "industri", "maskin"], x: 0 },
+    { n: 24, name: "IKG Group AB", why: "", p: ["bygg", "data", "industri", "maskin"], x: 0 },
+    { n: 25, name: "Proton Group", why: "", p: ["data", "industri", "maskin"], x: 2 },
+    { n: 26, name: "Science Park Jönköping", why: "Innovationsmiljö", p: ["bygg", "data", "industri", "maskin"], x: 0 },
+    { n: 27, name: "Videntes", why: "", p: ["bygg", "industri"], x: 0 },
+    { n: 28, name: "Datakraft i Småland AB", why: "", p: ["data", "industri"], x: 0 },
+    { n: 29, name: "Sweco Sverige AB", why: "Arkitekt- och ingenjörskonsult", p: ["bygg", "data", "industri", "maskin"], x: 2 },
+    { n: 30, name: "Procruitment", why: "Rekrytering", p: ["data", "maskin"], x: 0 },
+    { n: 31, name: "Hilcon Sverige AB", why: "", p: ["maskin"], x: 0 },
+    { n: 32, name: "Hoval AB", why: "Värme och ventilation", p: ["industri", "maskin"], x: 0 },
+    { n: 33, name: "Alumeco Sverige AB", why: "Aluminium och metaller", p: ["bygg", "industri"], x: 2 },
+    { n: 34, name: "Svevia", why: "Väg och anläggning", p: ["bygg", "maskin"], x: 0 },
+    { n: 35, name: "Etteplan", why: "Teknikkonsult, produktutveckling", p: ["data", "industri", "maskin"], x: 2 },
+    { n: 36, name: "FläktGroup Sweden AB", why: "Ventilation och klimat", p: ["industri", "maskin"], x: 0 },
+    { n: 37, name: "JELD-WEN/SWEDOOR", why: "Dörrar och snickeri", p: ["industri", "maskin"], x: 1 },
+    { n: 38, name: "Isiflo AB", why: "", p: ["industri", "maskin"], x: 0 },
+    { n: 39, name: "Enter Arkitektur AB", why: "Arkitektur och inredning", p: ["bygg"], x: 1 },
+    { n: 40, name: "Infobric Group AB", why: "", p: ["data"], x: 0 },
+    { n: 41, name: "Jordbruksverket", why: "", p: ["data"], x: 0 },
+    { n: 42, name: "SK tes", why: "", p: ["data", "industri"], x: 0 },
+    { n: 43, name: "Dizparc", why: "", p: ["data"], x: 0 },
+    { n: 44, name: "Holst Entreprenad AB", why: "", p: ["bygg"], x: 0 },
+    { n: 45, name: "AFRY", why: "Teknikkonsult", p: ["bygg", "data", "industri", "maskin"], x: 2 },
+    { n: 46, name: "Bosch Thermoteknik AB", why: "Värmeprodukter", p: ["data", "industri", "maskin"], x: 0 },
+    { n: 47, name: "Stora Enso Packaging AB", why: "Trä- och fiberprodukter", p: ["industri", "maskin"], x: 2 },
+    { n: 48, name: "Nordic Jönköping AB", why: "", p: ["data"], x: 0 },
+    { n: 49, name: "Domstolsverket", why: "", p: ["data"], x: 0 },
+    { n: 50, name: "Veprox", why: "", p: ["data", "industri", "maskin"], x: 0 },
+    { n: 51, name: "Netmine AB", why: "", p: ["data"], x: 0 },
+    { n: 52, name: "Flintab AB", why: "Vågar och registreringssystem", p: ["bygg", "data", "industri", "maskin"], x: 0 },
+    { n: 53, name: "Big Science Sweden", why: "", p: ["bygg", "data", "industri", "maskin"], x: 0 },
+    { n: 54, name: "Hydro Extrusion Sweden AB", why: "Aluminiumprofiler", p: ["industri", "maskin"], x: 2 },
+    { n: 55, name: "Strömsholmen AB", why: "", p: ["maskin"], x: 0 },
+    { n: 56, name: "ESBE AB", why: "Ventiler", p: ["industri", "maskin"], x: 0 },
+    { n: 57, name: "Grace Studio AB", why: "Designstudio", p: ["data"], x: 1 },
+    { n: 58, name: "Redeploy", why: "", p: ["data"], x: 0 },
+    { n: 59, name: "Swede-Wheel AB", why: "", p: ["industri", "maskin"], x: 0 },
+    { n: 60, name: "Sigma Technology Engineering AB", why: "Teknikkonsult", p: ["industri", "maskin"], x: 0 },
+    { n: 61, name: "Sigma Technology Embedded Group", why: "Teknikkonsult", p: ["data", "maskin"], x: 0 },
+    { n: 62, name: "Länsstyrelsen Västra Götaland", why: "", p: ["data"], x: 0 },
+    { n: 63, name: "Jönköpings kommun", why: "", p: ["data"], x: 0 },
+    { n: 64, name: "Husqvarna Group", why: "Produktutveckling och industridesign", p: ["data", "industri", "maskin"], x: 2 },
+    { n: 65, name: "Wästbygg Entreprenad AB", why: "", p: ["bygg"], x: 0 },
+    { n: 66, name: "Nova utbildning, FoU & Affärsutveckling", why: "Utbildning", p: ["industri", "maskin"], x: 0 },
+    { n: 67, name: "Attraktiva Oskarshamn", why: "", p: [], x: 0 },
+    { n: 68, name: "Produktionskonsult Väst AB (Prokon)", why: "Produktionskonsult", p: ["industri", "maskin"], x: 0 },
+    { n: 69, name: "YLAB Larssons Bygg AB", why: "Byggföretag", p: ["industri", "maskin"], x: 0 },
+    { n: 70, name: "Weconstruct Jönköping AB", why: "", p: ["bygg"], x: 0 },
+    { n: 71, name: "Kitron AB", why: "Elektroniktillverkning", p: ["bygg"], x: 0 },
+    { n: 72, name: "Kalmar Solutions AB", why: "", p: ["maskin"], x: 0 },
+    { n: 73, name: "Flokk AB", why: "Kontorsmöbler och stolar", p: ["data", "industri", "maskin"], x: 1 },
+    { n: 74, name: "Tecca AB + T-Emballage", why: "", p: ["data", "industri", "maskin"], x: 0 },
+    { n: 75, name: "Sensys Gatso Sweden AB", why: "Trafikövervakning", p: ["bygg", "industri"], x: 0 },
+    { n: 76, name: "Kongsberg Automotive AB", why: "Fordonskomponenter", p: ["data", "maskin"], x: 0 },
+    { n: 77, name: "Bellmer Cellwood", why: "", p: [], x: 0 },
+    { n: 78, name: "Addstaff", why: "Bemanning", p: ["maskin"], x: 0 },
+    { n: 79, name: "Hifab AB", why: "", p: ["bygg", "data", "industri", "maskin"], x: 0 },
+    { n: 80, name: "Unga Akademiker", why: "", p: ["bygg"], x: 0 },
+    { n: 81, name: "GEODIS", why: "Logistik", p: ["bygg", "data", "industri", "maskin"], x: 0 },
+    { n: 82, name: "ITAB Group AB", why: "Butiksinredning och inredningskoncept", p: ["industri"], x: 1 },
+    { n: 83, name: "Conservator Fuktreducering Svenska AB", why: "", p: ["bygg", "data", "industri", "maskin"], x: 0 },
+    { n: 84, name: "Pontarius AB", why: "", p: ["bygg"], x: 0 },
+    { n: 85, name: "NCC Sverige AB", why: "", p: ["bygg"], x: 0 },
+    { n: 86, name: "Elgiganten Logistik AB", why: "", p: ["bygg", "data", "industri"], x: 0 },
+    { n: 87, name: "Rapid Granulator AB", why: "Granulatorer", p: ["industri", "maskin"], x: 0 },
+    { n: 88, name: "Tyréns Sverige AB", why: "", p: ["bygg"], x: 0 },
+    { n: 89, name: "Magna Electronics Sweden", why: "Fordonselektronik", p: ["industri", "maskin"], x: 0 },
+    { n: 90, name: "Soliber Ingenjörer AB", why: "", p: ["bygg"], x: 0 },
+    { n: 91, name: "Habo kommun", why: "", p: ["data"], x: 0 },
+    { n: 92, name: "PS Retail", why: "", p: ["bygg", "industri", "maskin"], x: 2 },
+    { n: 93, name: "Norconsult Sverige AB", why: "", p: ["bygg"], x: 0 },
+    { n: 94, name: "EAB AB", why: "", p: ["bygg", "data", "maskin"], x: 0 },
+    { n: 95, name: "Contruster Engineering AB", why: "", p: ["bygg"], x: 0 },
+    { n: 96, name: "BSV Arkitekter & Ingenjörer AB", why: "", p: ["bygg"], x: 0 },
+    { n: 97, name: "Industrilås i Nässjö Aktiebolag", why: "Lås och beslag, bland annat till möbler", p: ["data", "industri", "maskin"], x: 1 },
+    { n: 98, name: "Sveriges Ingenjörer", why: "Fackförbund", p: ["bygg", "data", "industri", "maskin"], x: 0 },
+    { n: 99, name: "Volvo TTI", why: "Fordonstest", p: ["industri", "maskin"], x: 0 },
+    { n: 100, name: "Volvo Group Digital & IT", why: "IT", p: ["data"], x: 0 },
+    { n: 101, name: "AFRY Industry", why: "Teknikkonsult", p: ["industri", "maskin"], x: 2 },
+    { n: 102, name: "AFRY Infrastructure", why: "", p: ["bygg"], x: 0 },
+    { n: 103, name: "Elektroautomatik", why: "", p: ["data", "industri", "maskin"], x: 0 },
+    { n: 104, name: "Byggföretagen", why: "", p: ["bygg", "industri"], x: 0 },
+    { n: 105, name: "CEJN", why: "Snabbkopplingar", p: ["industri", "maskin"], x: 0 },
+    { n: 106, name: "Farsight", why: "", p: ["data"], x: 0 },
+    { n: 107, name: "Horse Powertrain", why: "Drivlinor", p: ["industri", "maskin"], x: 0 }
+  ];
+
+  var KEY = "karriarum2026-mobeldesign";
+  var state = {};
+  try { state = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { state = {}; }
+  var filter = "all";
+
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  var list = document.getElementById("list");
+
+  companies.forEach(function (c) {
+    var li = document.createElement("li");
+    li.className = "item " + (c.x === 1 ? "strong" : c.x === 2 ? "pot" : "maybe");
+    li.dataset.n = c.n;
+    li.innerHTML =
+      '<button type="button" class="num" aria-label="Visa monter ' + c.n + ' på kartan">' + c.n + '<small>Karta</small></button>' +
+      '<div class="body">' +
+        '<div class="top">' +
+          '<label for="c' + c.n + '">' +
+            '<div class="name">' + c.name + '</div>' +
+            (c.why ? '<div class="why">' + c.why + '</div>' : '') +
+            '<span class="tag">' + (c.x === 1 ? "Möbel / inredning" : c.x === 2 ? "Möjligen möbel" : progLabel(c)) + '</span>' +
+          '</label>' +
+          '<input type="checkbox" id="c' + c.n + '" aria-label="Besökt: ' + c.name + '">' +
+        '</div>' +
+        '<textarea rows="1" placeholder="Anteckningar, t.ex. kontaktperson eller praktikplats" aria-label="Anteckningar för ' + c.name + '"></textarea>' +
+      '</div>';
+    list.appendChild(li);
+
+    var box = li.querySelector("input");
+    var note = li.querySelector("textarea");
+    var s = state[c.n] || {};
+    box.checked = !!s.done;
+    note.value = s.note || "";
+    li.classList.toggle("done", box.checked);
+
+    li.querySelector(".num").addEventListener("click", function () { openMap(c.n); });
+
+    box.addEventListener("change", function () {
+      state[c.n] = state[c.n] || {};
+      state[c.n].done = box.checked;
+      li.classList.toggle("done", box.checked);
+      save(); update(); refreshPins();
+    });
+    note.addEventListener("input", function () {
+      state[c.n] = state[c.n] || {};
+      state[c.n].note = note.value;
+      save();
+    });
+  });
+
+  function byNum(n) { return companies.filter(function (x) { return x.n == n; })[0]; }
+  var prog = "maskin", status = "all";
+  function inProg(c) {
+    if (prog === "mobel") return c.x >= 1;
+    return prog === "alla" || c.p.indexOf(prog) !== -1 || (prog === "maskin" && c.x === 1);
+  }
+  function update() {
+    var done = 0, total = 0, shown = 0;
+    document.querySelectorAll(".item").forEach(function (li) {
+      var c = byNum(li.dataset.n);
+      var isDone = !!(state[c.n] && state[c.n].done);
+      var pm = inProg(c);
+      if (pm) { total++; if (isDone) done++; }
+      var show = pm && (status === "all" || (status === "extra" && c.x === 1) || (status === "todo" && !isDone));
+      li.hidden = !show;
+      if (show) shown++;
+    });
+    var pct = total ? Math.round(done / total * 100) : 0;
+    document.getElementById("count").textContent = done + " av " + total;
+    document.getElementById("pct").textContent = pct + " %";
+    document.getElementById("fill").style.width = pct + "%";
+    document.getElementById("empty").hidden = shown > 0;
+    if (typeof refreshPins === "function" && document.getElementById("pin" + companies[0].n)) refreshPins();
+  }
+
+  function wire(sel, attr, setter) {
+    document.querySelectorAll(sel + " button[" + attr + "]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        setter(b.getAttribute(attr));
+        document.querySelectorAll(sel + " button[" + attr + "]").forEach(function (x) {
+          x.setAttribute("aria-pressed", x === b ? "true" : "false");
+        });
+        update();
+      });
+    });
+  }
+  wire("#progfilters", "data-prog", function (v) { prog = v; });
+  wire("#statusfilters", "data-status", function (v) { status = v; });
+
+  document.getElementById("reset").addEventListener("click", function () {
+    if (!confirm("Nollställa alla bockar och anteckningar?")) return;
+    state = {}; save();
+    document.querySelectorAll(".item").forEach(function (li) {
+      li.querySelector("input").checked = false;
+      li.querySelector("textarea").value = "";
+      li.classList.remove("done");
+    });
+    update();
+  });
+
+  var POS = {1:[81.38,77.73],2:[87.72,77.73],3:[87.72,63.51],4:[81.38,68.25],5:[81.24,63.71],6:[93.93,63.92],7:[97.93,68.87],10:[98.76,58.76],11:[96.69,58.76],12:[87.72,50.31],13:[81.38,50.31],14:[87.86,43.51],15:[87.86,38.56],16:[87.86,33.61],17:[87.86,28.66],18:[87.86,23.71],19:[81.38,23.71],20:[81.38,28.66],21:[81.38,33.61],22:[81.38,38.35],23:[81.38,43.51],24:[75.86,53.81],25:[73.79,53.81],26:[75.72,73.20],27:[73.66,73.20],28:[71.59,76.49],29:[74.21,76.49],30:[76.83,76.70],31:[78.21,79.59],32:[78.21,83.09],33:[75.45,86.39],34:[72.83,86.39],35:[69.93,85.36],36:[69.10,81.86],37:[59.45,76.49],38:[62.07,76.49],39:[64.69,76.49],40:[66.62,79.59],41:[66.48,83.09],42:[62.07,86.39],43:[59.45,86.39],44:[56.55,85.36],45:[55.86,79.79],46:[64.83,69.07],47:[64.83,65.57],48:[64.69,49.90],49:[59.03,49.90],50:[58.48,63.51],51:[58.48,66.39],52:[58.48,69.28],53:[53.93,53.81],54:[52.00,53.81],55:[52.97,73.20],56:[50.76,73.20],57:[46.62,76.08],58:[49.38,76.08],59:[51.86,76.08],60:[53.24,82.06],61:[52.55,86.60],62:[48.55,86.60],63:[45.10,86.60],64:[44.41,80.82],65:[42.21,68.45],66:[39.72,68.45],67:[37.10,68.66],68:[42.21,62.89],69:[40.41,62.89],70:[38.62,62.89],71:[41.66,49.90],72:[35.72,49.90],73:[30.48,55.46],74:[28.41,55.46],75:[26.21,55.26],76:[24.14,55.46],77:[27.45,49.48],78:[25.10,49.48],79:[20.69,49.48],80:[12.97,44.12],81:[11.86,41.44],82:[10.76,38.76],83:[16.28,35.46],84:[11.45,31.55],85:[16.14,28.25],86:[11.72,26.19],87:[10.48,23.09],88:[18.76,10.93],89:[22.62,18.97],90:[25.24,18.97],91:[27.72,14.85],92:[27.72,11.13],93:[27.72,7.42],94:[26.21,4.95],95:[23.72,5.15],96:[20.97,4.95],97:[18.76,7.42],98:[12.55,17.94],99:[16.28,9.07],100:[14.07,4.54],101:[11.59,4.33],102:[9.38,4.54],103:[7.17,4.74],104:[5.79,7.01],105:[7.17,10.72],106:[8.41,14.02],107:[12.55,14.85]};
+  var mapview = document.getElementById("mapview");
+  var wrap = document.getElementById("mapwrap");
+  var scroller = document.getElementById("mapscroll");
+  var capname = document.getElementById("capname");
+  var capwhy = document.getElementById("capwhy");
+  var capdone = document.getElementById("capdone");
+  var selected = null;
+
+  function isDone(n) { return !!(state[n] && state[n].done); }
+
+  companies.forEach(function (c) {
+    var p = POS[c.n]; if (!p) return;
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "pin " + (c.x === 1 ? "strong" : c.x === 2 ? "pot" : "maybe"); b.id = "pin" + c.n;
+    b.style.left = p[0] + "%"; b.style.top = p[1] + "%";
+    b.textContent = c.n;
+    b.setAttribute("aria-label", "Monter " + c.n + ", " + c.name);
+    b.addEventListener("click", function () { select(c.n, false); });
+    wrap.appendChild(b);
+  });
+
+  function refreshPins() {
+    companies.forEach(function (c) {
+      var b = document.getElementById("pin" + c.n); if (!b) return;
+      b.hidden = !inProg(c);
+      b.classList.toggle("done", isDone(c.n));
+      b.classList.toggle("sel", selected === c.n);
+    });
+    if (selected) capdone.textContent = isDone(selected) ? "Ta bort bock" : "Bocka av";
+  }
+
+  function select(n, center) {
+    selected = n;
+    var c = byNum(n);
+    capname.textContent = "Monter " + n + " · " + c.name;
+    capwhy.textContent = POS[n] ? c.why : (c.why ? c.why + ". " : "") + "Positionen finns inte på kartan ännu.";
+    capdone.hidden = false;
+    refreshPins();
+    var b = document.getElementById("pin" + n);
+    if (center && b) {
+      scroller.scrollLeft = b.offsetLeft - scroller.clientWidth / 2;
+      scroller.scrollTop = b.offsetTop - scroller.clientHeight / 2;
+    }
+  }
+
+  var MINW = 500, MAXW = 3200;
+  function setZoom(w, ax, ay) {
+    var old = wrap.offsetWidth;
+    w = Math.max(MINW, Math.min(MAXW, w));
+    if (ax === undefined) { ax = scroller.clientWidth / 2; ay = scroller.clientHeight / 2; }
+    var r = w / old;
+    wrap.style.width = w + "px";
+    scroller.scrollLeft = (scroller.scrollLeft + ax) * r - ax;
+    scroller.scrollTop = (scroller.scrollTop + ay) * r - ay;
+  }
+  document.getElementById("zin").addEventListener("click", function () { setZoom(wrap.offsetWidth * 1.4); });
+  document.getElementById("zout").addEventListener("click", function () { setZoom(wrap.offsetWidth / 1.4); });
+  function fitMap() {
+    // Fyll hela kartytan: kartan blir minst lika bred som skärmen och minst lika hög som ytan
+    var cw = scroller.clientWidth || window.innerWidth;
+    var ch = scroller.clientHeight || (window.innerHeight - 220);
+    var w = Math.max(cw, ch * 725 / 485);
+    wrap.style.width = Math.max(MINW, w) + "px";
+    scroller.scrollLeft = (wrap.offsetWidth - cw) / 2;
+    scroller.scrollTop = 0;
+  }
+  document.getElementById("zfit").addEventListener("click", fitMap);
+
+  var pinch = null;
+  function dist(t) { return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY); }
+  scroller.addEventListener("touchstart", function (e) {
+    if (e.touches.length === 2) pinch = { d: dist(e.touches), w: wrap.offsetWidth };
+  }, { passive: true });
+  scroller.addEventListener("touchmove", function (e) {
+    if (pinch && e.touches.length === 2) {
+      e.preventDefault();
+      var rect = scroller.getBoundingClientRect();
+      var cx = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+      var cy = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+      setZoom(pinch.w * dist(e.touches) / pinch.d, cx, cy);
+    }
+  }, { passive: false });
+  scroller.addEventListener("touchend", function (e) { if (e.touches.length < 2) pinch = null; });
+  scroller.addEventListener("wheel", function (e) {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    var rect = scroller.getBoundingClientRect();
+    setZoom(wrap.offsetWidth * (e.deltaY < 0 ? 1.15 : 1 / 1.15), e.clientX - rect.left, e.clientY - rect.top);
+  }, { passive: false });
+
+  function openMap(n) {
+    mapview.hidden = false;
+    document.body.style.overflow = "hidden";
+    if (!n) { selected = null; capdone.hidden = true; refreshPins(); }
+    // Vänta tills kartytan har fått sin storlek innan vi räknar ut zoomen
+    requestAnimationFrame(function () {
+      fitMap();
+      if (n) select(n, true);
+      else setTimeout(fitMap, 60);
+    });
+  }
+  function closeMap() {
+    mapview.hidden = true;
+    document.body.style.overflow = "";
+  }
+
+  document.getElementById("openmap").addEventListener("click", function () { openMap(null); });
+  document.getElementById("closemap").addEventListener("click", closeMap);
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !mapview.hidden) closeMap(); });
+  capdone.addEventListener("click", function () {
+    if (!selected) return;
+    var box = document.getElementById("c" + selected);
+    box.checked = !box.checked;
+    box.dispatchEvent(new Event("change"));
+  });
+
+  update();
+  refreshPins();
+</script>
+
+<script>
+  try {
+    if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+      navigator.serviceWorker.register("sw.js");
+    }
+  } catch (e) {}
+</script>
+</body>
+</html>
