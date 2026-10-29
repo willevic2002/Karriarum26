@@ -1,4 +1,4 @@
-const CACHE = "karriarum-2026-v1";
+const CACHE = "karriarum-2026-v2";
 const FILES = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", (e) => {

@@ -10,7 +10,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<title>Karriärum 2026 – Möbeldesign</title>
+<title>Karriärum 2026</title>
 <style>
   :root {
     --bg: #f6f7f4;
@@ -21,8 +21,6 @@
     --strong: #d9695c;
     --strong-bg: #fbe9e6;
     --maybe: #2f6f8f;
-    --pot: #b9801a;
-    --pot-bg: #fbf0d9;
     --maybe-bg: #e3eef4;
     --accent: #2f6f8f;
     --done: #9aa5a9;
@@ -37,8 +35,6 @@
       --strong: #ee8a7e;
       --strong-bg: #3a2522;
       --maybe: #7fb8d4;
-      --pot: #e6b25a;
-      --pot-bg: #3a2f17;
       --maybe-bg: #1f2f38;
       --accent: #7fb8d4;
       --done: #647177;
@@ -121,8 +117,12 @@
   .name { font-weight: 700; font-size: 1.02rem; }
   .why { color: var(--muted); font-size: 0.88rem; margin-top: 1px; }
   .tag { font-size: 0.78rem; font-weight: 600; margin-top: 4px; display: inline-block; }
-  .item.pot .num { background: var(--pot-bg); color: var(--pot); }
-  .pot .tag { color: var(--pot); }
+  .tag:empty { display: none; }
+  .tag:empty + .dots { margin-left: 0; }
+  .dots { display: inline-flex; gap: 4px; margin: 6px 0 0 8px; vertical-align: middle; }
+  .dots i { width: 11px; height: 11px; border-radius: 50%; }
+  .d-bygg { background: #8acff2; } .d-data { background: #f25962; } .d-industri { background: #f7b65b; } .d-maskin { background: #ade2bd; }
+  .filters select { font: inherit; font-size: 0.9rem; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); flex: 1; min-width: 0; }
   .strong .tag { color: var(--strong); }
   .maybe .tag { color: var(--maybe); }
 
@@ -195,7 +195,6 @@
   }
   .pin.strong { background: #d9695c; }
   .pin.maybe { background: #2f6f8f; }
-  .pin.pot { background: #b9801a; }
   .pin.done { background: #7d898d; }
   .pin.sel {
     z-index: 3; min-width: 40px; height: 40px; font-size: 0.95rem;
@@ -223,7 +222,7 @@
 
 <header>
   <h1>Karriärum 2026</h1>
-  <p>Välj utbildning för att se vilka företag som söker just den. Maskin (Mechanical Engineering) innehåller produktutveckling med möbeldesign. Röda är möbel och inredning, gula är möjligen möbel.</p>
+  <p>Välj din utbildning för att se vilka företag som söker den. Färgprickarna är samma som på mässans karta. <b>Måste</b> betyder att företaget bara söker din grupp.</p>
 </header>
 
 <div class="sticky">
@@ -234,17 +233,12 @@
     </div>
     <div class="bar"><div id="fill"></div></div>
     <div class="filters" role="group" aria-label="Utbildning" id="progfilters">
-      <span class="flabel">Utbildning</span>
-      <button data-prog="mobel" aria-pressed="false">Möbel</button>
-      <button data-prog="alla" aria-pressed="false">Alla</button>
-      <button data-prog="bygg" aria-pressed="false">Bygg</button>
-      <button data-prog="data" aria-pressed="false">Data/IT</button>
-      <button data-prog="industri" aria-pressed="false">Industri</button>
-      <button data-prog="maskin" aria-pressed="true">Maskin</button>
+      <label class="flabel" for="prog">Utbildning</label>
+      <select id="prog"><option value="">Alla företag</option></select>
     </div>
     <div class="filters" role="group" aria-label="Visa" id="statusfilters">
       <button data-status="all" aria-pressed="true">Alla</button>
-      <button data-status="extra" aria-pressed="false">Extra viktiga</button>
+      <button data-status="extra" aria-pressed="false">Måsten</button>
       <button data-status="todo" aria-pressed="false">Ej besökta</button>
       <button type="button" class="mapbtn" id="openmap">Karta</button>
     </div>
@@ -274,125 +268,132 @@
   </div>
   <div class="mapnote">Schematisk karta. Placeringarna är uppskattade, så dubbelkolla med mässans egen karta. Zooma med + och − eller genom att nypa.</div>
   <div class="mapbar">
-    <div class="cap"><b id="capname">Tryck på en monter</b><span id="capwhy">Röd är möbel/inredning, gul är möjligen möbel, blå är övriga.</span></div>
+    <div class="cap"><b id="capname">Tryck på en monter</b><span id="capwhy">Röda nålar är måsten för din utbildning.</span></div>
     <button type="button" id="capdone" hidden>Bocka av</button>
   </div>
 </div>
 
 <script>
-  var PL = { bygg: "Bygg", data: "Data/IT", industri: "Industri", maskin: "Maskin" };
+  var PL = { bygg: "Bygg (blå)", data: "Data/IT (röd)", industri: "Industri (gul)", maskin: "Maskin (grön)" };
+  // Programmen per färggrupp, enligt mässans karta
+  var PROGS = {
+    bygg: ["Byggnadsutformning med arkitektur", "Civilingenjör i Byggnadsteknik", "Husbyggnadsteknik/Väg- och vattenbyggnadsteknik", "Ljusdesign och belysningsteknik", "Sustainable Building Information Management"],
+    data: ["AI Engineering", "Civilingenjör i datateknik", "Cybersecurity", "Grafisk design och webbutveckling", "Inbyggda system", "Mjukvaruutveckling och mobila plattformar", "Nätverk, infrastruktur och cybersäkerhet", "Software Engineering for AI", "User Experience Design"],
+    industri: ["Logistik och Ledning", "Supply Chain Operations Management", "Sustainable Supply Chain Management"],
+    maskin: ["3D-teknik", "Civilingenjör i industriell produktframtagning", "Digital Product Development", "Industriell ekonomi och produktionsledning", "Industrial Design", "Materials Engineering for the Manufacturing Industry", "Production Engineering and Automation", "Produktutveckling och design", "Produktutveckling med möbeldesign"]
+  };
   function progLabel(c) { return c.p.length ? c.p.map(function (k) { return PL[k]; }).join(" · ") : "Utbildning okänd"; }
   var companies = [
-    { n: 1, name: "Lear Corporation Sweden AB", why: "Bilstolar, sittdesign och textil", p: ["data", "maskin"], x: 2 },
-    { n: 2, name: "Thule", why: "Bärsystem och tillbehör", p: ["data", "industri", "maskin"], x: 2 },
-    { n: 3, name: "Fagerhult Belysning AB", why: "Belysning och armaturer", p: ["bygg", "data", "industri", "maskin"], x: 1 },
-    { n: 4, name: "Daloc AB", why: "", p: ["industri", "maskin"], x: 0 },
-    { n: 5, name: "Jönköping Energi", why: "Energibolag", p: ["bygg", "data", "industri", "maskin"], x: 0 },
-    { n: 6, name: "Peab Sverige AB", why: "Byggföretag", p: ["bygg"], x: 0 },
-    { n: 7, name: "International Office", why: "", p: ["bygg", "data", "industri", "maskin"], x: 0 },
-    { n: 8, name: "Jönköpings kommun, Stadsbyggnadskontoret", why: "", p: ["bygg"], x: 0 },
-    { n: 9, name: "Jönköpings kommun, Tekniska kontoret", why: "", p: ["bygg"], x: 0 },
-    { n: 10, name: "Attends Healthcare AB", why: "", p: [], x: 0 },
-    { n: 11, name: "Prysmian", why: "Kabel", p: ["industri", "maskin"], x: 0 },
-    { n: 12, name: "CGI Sverige AB", why: "IT-konsult", p: ["industri"], x: 0 },
-    { n: 13, name: "Qtech Group", why: "", p: ["data"], x: 0 },
-    { n: 14, name: "ByggDialog AB", why: "", p: ["data", "industri", "maskin"], x: 0 },
-    { n: 15, name: "Skanska Sverige AB", why: "Bygg och anläggning", p: ["bygg"], x: 0 },
-    { n: 16, name: "Scania CV AB", why: "Lastbilar och motorer", p: ["bygg", "industri"], x: 0 },
-    { n: 17, name: "Telia / Telia Cygate", why: "Telekom", p: ["data", "industri", "maskin"], x: 0 },
-    { n: 18, name: "Saab", why: "Försvar och säkerhet", p: ["data"], x: 0 },
-    { n: 19, name: "AP&T Group", why: "Pressar och plåtformning", p: ["data", "industri", "maskin"], x: 0 },
-    { n: 20, name: "Combitech AB", why: "Produktutvecklingskonsult", p: ["data", "industri", "maskin"], x: 2 },
-    { n: 21, name: "JSC it-partner", why: "", p: ["data"], x: 0 },
-    { n: 22, name: "Sigma Industry South AB", why: "", p: ["data"], x: 0 },
-    { n: 23, name: "Framtiden AB", why: "", p: ["bygg", "data", "industri", "maskin"], x: 0 },
-    { n: 24, name: "IKG Group AB", why: "", p: ["bygg", "data", "industri", "maskin"], x: 0 },
-    { n: 25, name: "Proton Group", why: "", p: ["data", "industri", "maskin"], x: 2 },
-    { n: 26, name: "Science Park Jönköping", why: "Innovationsmiljö", p: ["bygg", "data", "industri", "maskin"], x: 0 },
-    { n: 27, name: "Videntes", why: "", p: ["bygg", "industri"], x: 0 },
-    { n: 28, name: "Datakraft i Småland AB", why: "", p: ["data", "industri"], x: 0 },
-    { n: 29, name: "Sweco Sverige AB", why: "Arkitekt- och ingenjörskonsult", p: ["bygg", "data", "industri", "maskin"], x: 2 },
-    { n: 30, name: "Procruitment", why: "Rekrytering", p: ["data", "maskin"], x: 0 },
-    { n: 31, name: "Hilcon Sverige AB", why: "", p: ["maskin"], x: 0 },
-    { n: 32, name: "Hoval AB", why: "Värme och ventilation", p: ["industri", "maskin"], x: 0 },
-    { n: 33, name: "Alumeco Sverige AB", why: "Aluminium och metaller", p: ["bygg", "industri"], x: 2 },
-    { n: 34, name: "Svevia", why: "Väg och anläggning", p: ["bygg", "maskin"], x: 0 },
-    { n: 35, name: "Etteplan", why: "Teknikkonsult, produktutveckling", p: ["data", "industri", "maskin"], x: 2 },
-    { n: 36, name: "FläktGroup Sweden AB", why: "Ventilation och klimat", p: ["industri", "maskin"], x: 0 },
-    { n: 37, name: "JELD-WEN/SWEDOOR", why: "Dörrar och snickeri", p: ["industri", "maskin"], x: 1 },
-    { n: 38, name: "Isiflo AB", why: "", p: ["industri", "maskin"], x: 0 },
-    { n: 39, name: "Enter Arkitektur AB", why: "Arkitektur och inredning", p: ["bygg"], x: 1 },
-    { n: 40, name: "Infobric Group AB", why: "", p: ["data"], x: 0 },
-    { n: 41, name: "Jordbruksverket", why: "", p: ["data"], x: 0 },
-    { n: 42, name: "SK tes", why: "", p: ["data", "industri"], x: 0 },
-    { n: 43, name: "Dizparc", why: "", p: ["data"], x: 0 },
-    { n: 44, name: "Holst Entreprenad AB", why: "", p: ["bygg"], x: 0 },
-    { n: 45, name: "AFRY", why: "Teknikkonsult", p: ["bygg", "data", "industri", "maskin"], x: 2 },
-    { n: 46, name: "Bosch Thermoteknik AB", why: "Värmeprodukter", p: ["data", "industri", "maskin"], x: 0 },
-    { n: 47, name: "Stora Enso Packaging AB", why: "Trä- och fiberprodukter", p: ["industri", "maskin"], x: 2 },
-    { n: 48, name: "Nordic Jönköping AB", why: "", p: ["data"], x: 0 },
-    { n: 49, name: "Domstolsverket", why: "", p: ["data"], x: 0 },
-    { n: 50, name: "Veprox", why: "", p: ["data", "industri", "maskin"], x: 0 },
-    { n: 51, name: "Netmine AB", why: "", p: ["data"], x: 0 },
-    { n: 52, name: "Flintab AB", why: "Vågar och registreringssystem", p: ["bygg", "data", "industri", "maskin"], x: 0 },
-    { n: 53, name: "Big Science Sweden", why: "", p: ["bygg", "data", "industri", "maskin"], x: 0 },
-    { n: 54, name: "Hydro Extrusion Sweden AB", why: "Aluminiumprofiler", p: ["industri", "maskin"], x: 2 },
-    { n: 55, name: "Strömsholmen AB", why: "", p: ["maskin"], x: 0 },
-    { n: 56, name: "ESBE AB", why: "Ventiler", p: ["industri", "maskin"], x: 0 },
-    { n: 57, name: "Grace Studio AB", why: "Designstudio", p: ["data"], x: 1 },
-    { n: 58, name: "Redeploy", why: "", p: ["data"], x: 0 },
-    { n: 59, name: "Swede-Wheel AB", why: "", p: ["industri", "maskin"], x: 0 },
-    { n: 60, name: "Sigma Technology Engineering AB", why: "Teknikkonsult", p: ["industri", "maskin"], x: 0 },
-    { n: 61, name: "Sigma Technology Embedded Group", why: "Teknikkonsult", p: ["data", "maskin"], x: 0 },
-    { n: 62, name: "Länsstyrelsen Västra Götaland", why: "", p: ["data"], x: 0 },
-    { n: 63, name: "Jönköpings kommun", why: "", p: ["data"], x: 0 },
-    { n: 64, name: "Husqvarna Group", why: "Produktutveckling och industridesign", p: ["data", "industri", "maskin"], x: 2 },
-    { n: 65, name: "Wästbygg Entreprenad AB", why: "", p: ["bygg"], x: 0 },
-    { n: 66, name: "Nova utbildning, FoU & Affärsutveckling", why: "Utbildning", p: ["industri", "maskin"], x: 0 },
-    { n: 67, name: "Attraktiva Oskarshamn", why: "", p: [], x: 0 },
-    { n: 68, name: "Produktionskonsult Väst AB (Prokon)", why: "Produktionskonsult", p: ["industri", "maskin"], x: 0 },
-    { n: 69, name: "YLAB Larssons Bygg AB", why: "Byggföretag", p: ["industri", "maskin"], x: 0 },
-    { n: 70, name: "Weconstruct Jönköping AB", why: "", p: ["bygg"], x: 0 },
-    { n: 71, name: "Kitron AB", why: "Elektroniktillverkning", p: ["bygg"], x: 0 },
-    { n: 72, name: "Kalmar Solutions AB", why: "", p: ["maskin"], x: 0 },
-    { n: 73, name: "Flokk AB", why: "Kontorsmöbler och stolar", p: ["data", "industri", "maskin"], x: 1 },
-    { n: 74, name: "Tecca AB + T-Emballage", why: "", p: ["data", "industri", "maskin"], x: 0 },
-    { n: 75, name: "Sensys Gatso Sweden AB", why: "Trafikövervakning", p: ["bygg", "industri"], x: 0 },
-    { n: 76, name: "Kongsberg Automotive AB", why: "Fordonskomponenter", p: ["data", "maskin"], x: 0 },
-    { n: 77, name: "Bellmer Cellwood", why: "", p: [], x: 0 },
-    { n: 78, name: "Addstaff", why: "Bemanning", p: ["maskin"], x: 0 },
-    { n: 79, name: "Hifab AB", why: "", p: ["bygg", "data", "industri", "maskin"], x: 0 },
-    { n: 80, name: "Unga Akademiker", why: "", p: ["bygg"], x: 0 },
-    { n: 81, name: "GEODIS", why: "Logistik", p: ["bygg", "data", "industri", "maskin"], x: 0 },
-    { n: 82, name: "ITAB Group AB", why: "Butiksinredning och inredningskoncept", p: ["industri"], x: 1 },
-    { n: 83, name: "Conservator Fuktreducering Svenska AB", why: "", p: ["bygg", "data", "industri", "maskin"], x: 0 },
-    { n: 84, name: "Pontarius AB", why: "", p: ["bygg"], x: 0 },
-    { n: 85, name: "NCC Sverige AB", why: "", p: ["bygg"], x: 0 },
-    { n: 86, name: "Elgiganten Logistik AB", why: "", p: ["bygg", "data", "industri"], x: 0 },
-    { n: 87, name: "Rapid Granulator AB", why: "Granulatorer", p: ["industri", "maskin"], x: 0 },
-    { n: 88, name: "Tyréns Sverige AB", why: "", p: ["bygg"], x: 0 },
-    { n: 89, name: "Magna Electronics Sweden", why: "Fordonselektronik", p: ["industri", "maskin"], x: 0 },
-    { n: 90, name: "Soliber Ingenjörer AB", why: "", p: ["bygg"], x: 0 },
-    { n: 91, name: "Habo kommun", why: "", p: ["data"], x: 0 },
-    { n: 92, name: "PS Retail", why: "", p: ["bygg", "industri", "maskin"], x: 2 },
-    { n: 93, name: "Norconsult Sverige AB", why: "", p: ["bygg"], x: 0 },
-    { n: 94, name: "EAB AB", why: "", p: ["bygg", "data", "maskin"], x: 0 },
-    { n: 95, name: "Contruster Engineering AB", why: "", p: ["bygg"], x: 0 },
-    { n: 96, name: "BSV Arkitekter & Ingenjörer AB", why: "", p: ["bygg"], x: 0 },
-    { n: 97, name: "Industrilås i Nässjö Aktiebolag", why: "Lås och beslag, bland annat till möbler", p: ["data", "industri", "maskin"], x: 1 },
-    { n: 98, name: "Sveriges Ingenjörer", why: "Fackförbund", p: ["bygg", "data", "industri", "maskin"], x: 0 },
-    { n: 99, name: "Volvo TTI", why: "Fordonstest", p: ["industri", "maskin"], x: 0 },
-    { n: 100, name: "Volvo Group Digital & IT", why: "IT", p: ["data"], x: 0 },
-    { n: 101, name: "AFRY Industry", why: "Teknikkonsult", p: ["industri", "maskin"], x: 2 },
-    { n: 102, name: "AFRY Infrastructure", why: "", p: ["bygg"], x: 0 },
-    { n: 103, name: "Elektroautomatik", why: "", p: ["data", "industri", "maskin"], x: 0 },
-    { n: 104, name: "Byggföretagen", why: "", p: ["bygg", "industri"], x: 0 },
-    { n: 105, name: "CEJN", why: "Snabbkopplingar", p: ["industri", "maskin"], x: 0 },
-    { n: 106, name: "Farsight", why: "", p: ["data"], x: 0 },
-    { n: 107, name: "Horse Powertrain", why: "Drivlinor", p: ["industri", "maskin"], x: 0 }
+    { n: 1, name: "Lear Corporation Sweden AB", why: "Bilstolar, sittdesign och textil", p: ["data", "maskin"] },
+    { n: 2, name: "Thule", why: "Bärsystem och tillbehör", p: ["data", "industri", "maskin"] },
+    { n: 3, name: "Fagerhult Belysning AB", why: "Belysning och armaturer", p: ["bygg", "data", "industri", "maskin"] },
+    { n: 4, name: "Daloc AB", why: "", p: ["industri", "maskin"] },
+    { n: 5, name: "Jönköping Energi", why: "Energibolag", p: ["bygg", "data", "industri", "maskin"] },
+    { n: 6, name: "Peab Sverige AB", why: "Byggföretag", p: ["bygg"] },
+    { n: 7, name: "International Office", why: "", p: ["bygg", "data", "industri", "maskin"] },
+    { n: 8, name: "Jönköpings kommun, Stadsbyggnadskontoret", why: "", p: ["bygg"] },
+    { n: 9, name: "Jönköpings kommun, Tekniska kontoret", why: "", p: ["bygg"] },
+    { n: 10, name: "Attends Healthcare AB", why: "", p: ["industri", "maskin"] },
+    { n: 11, name: "Prysmian", why: "Kabel", p: ["industri", "maskin"] },
+    { n: 12, name: "CGI Sverige AB", why: "IT-konsult", p: ["data"] },
+    { n: 13, name: "Qtech Group", why: "", p: ["data", "industri", "maskin"] },
+    { n: 14, name: "ByggDialog AB", why: "", p: ["bygg"] },
+    { n: 15, name: "Skanska Sverige AB", why: "Bygg och anläggning", p: ["bygg", "industri"] },
+    { n: 16, name: "Scania CV AB", why: "Lastbilar och motorer", p: ["data", "industri", "maskin"] },
+    { n: 17, name: "Telia / Telia Cygate", why: "Telekom", p: ["data"] },
+    { n: 18, name: "Saab", why: "Försvar och säkerhet", p: ["data", "industri", "maskin"] },
+    { n: 19, name: "AP&T Group", why: "Pressar och plåtformning", p: ["data", "industri", "maskin"] },
+    { n: 20, name: "Combitech AB", why: "Produktutvecklingskonsult", p: ["data"] },
+    { n: 21, name: "JSC it-partner", why: "", p: ["data"] },
+    { n: 22, name: "Sigma Industry South AB", why: "", p: ["bygg", "data", "industri", "maskin"] },
+    { n: 23, name: "Framtiden AB", why: "", p: ["bygg", "data", "industri", "maskin"] },
+    { n: 24, name: "IKG Group AB", why: "", p: ["data", "industri", "maskin"] },
+    { n: 25, name: "Proton Group", why: "", p: ["bygg", "industri", "maskin"] },
+    { n: 26, name: "Science Park Jönköping", why: "Innovationsmiljö", p: ["bygg", "data", "industri", "maskin"] },
+    { n: 27, name: "Videntes", why: "", p: ["bygg"] },
+    { n: 28, name: "Datakraft i Småland AB", why: "", p: ["data", "industri"] },
+    { n: 29, name: "Sweco Sverige AB", why: "Arkitekt- och ingenjörskonsult", p: ["bygg", "data", "industri", "maskin"] },
+    { n: 30, name: "Procruitment", why: "Rekrytering", p: ["data", "maskin"] },
+    { n: 31, name: "Hilcon Sverige AB", why: "", p: ["maskin"] },
+    { n: 32, name: "Hoval AB", why: "Värme och ventilation", p: ["industri", "maskin"] },
+    { n: 33, name: "Alumeco Sverige AB", why: "Aluminium och metaller", p: ["bygg", "industri"] },
+    { n: 34, name: "Svevia", why: "Väg och anläggning", p: ["bygg", "maskin"] },
+    { n: 35, name: "Etteplan", why: "Teknikkonsult, produktutveckling", p: ["data", "industri", "maskin"] },
+    { n: 36, name: "FläktGroup Sweden AB", why: "Ventilation och klimat", p: ["industri", "maskin"] },
+    { n: 37, name: "JELD-WEN/SWEDOOR", why: "Dörrar och snickeri", p: ["industri", "maskin"] },
+    { n: 38, name: "Isiflo AB", why: "", p: ["industri", "maskin"] },
+    { n: 39, name: "Enter Arkitektur AB", why: "Arkitektur och inredning", p: ["bygg"] },
+    { n: 40, name: "Infobric Group AB", why: "", p: ["data"] },
+    { n: 41, name: "Jordbruksverket", why: "", p: ["data"] },
+    { n: 42, name: "SK tes", why: "", p: ["data", "industri"] },
+    { n: 43, name: "Dizparc", why: "", p: ["data"] },
+    { n: 44, name: "Holst Entreprenad AB", why: "", p: ["bygg"] },
+    { n: 45, name: "AFRY", why: "Teknikkonsult", p: ["bygg", "data", "industri", "maskin"] },
+    { n: 46, name: "Bosch Thermoteknik AB", why: "Värmeprodukter", p: ["data", "industri", "maskin"] },
+    { n: 47, name: "Stora Enso Packaging AB", why: "Trä- och fiberprodukter", p: ["industri", "maskin"] },
+    { n: 48, name: "Nordlo Jönköping AB", why: "", p: ["data"] },
+    { n: 49, name: "Domstolsverket", why: "", p: ["data"] },
+    { n: 50, name: "Veprox", why: "", p: ["data", "industri", "maskin"] },
+    { n: 51, name: "Netmine AB", why: "", p: ["data"] },
+    { n: 52, name: "Flintab AB", why: "Vågar och registreringssystem", p: ["bygg", "data", "industri", "maskin"] },
+    { n: 53, name: "Big Science Sweden", why: "", p: ["bygg", "data", "industri", "maskin"] },
+    { n: 54, name: "Hydro Extrusion Sweden AB", why: "Aluminiumprofiler", p: ["industri", "maskin"] },
+    { n: 55, name: "Strömsholmen AB", why: "", p: ["maskin"] },
+    { n: 56, name: "ESBE AB", why: "Ventiler", p: ["industri", "maskin"] },
+    { n: 57, name: "Grace Studio AB", why: "Designstudio", p: ["data"] },
+    { n: 58, name: "Redeploy", why: "", p: ["data"] },
+    { n: 59, name: "Swede-Wheel AB", why: "", p: ["industri", "maskin"] },
+    { n: 60, name: "Sigma Technology Engineering AB", why: "Teknikkonsult", p: ["industri", "maskin"] },
+    { n: 61, name: "Sigma Technology Embedded Group", why: "Teknikkonsult", p: ["data", "maskin"] },
+    { n: 62, name: "Länsstyrelsen Västra Götaland", why: "", p: ["data"] },
+    { n: 63, name: "Jönköpings kommun", why: "", p: ["data"] },
+    { n: 64, name: "Husqvarna Group", why: "Produktutveckling och industridesign", p: ["data", "industri", "maskin"] },
+    { n: 65, name: "Wästbygg Entreprenad AB", why: "", p: ["bygg"] },
+    { n: 66, name: "Nova utbildning, FoU & Affärsutveckling", why: "Utbildning", p: ["industri", "maskin"] },
+    { n: 67, name: "Attraktiva Oskarshamn", why: "", p: ["industri", "maskin"] },
+    { n: 68, name: "Produktionskonsult Väst AB (Prokon)", why: "Produktionskonsult", p: ["industri", "maskin"] },
+    { n: 69, name: "YLAB Larssons Bygg AB", why: "Byggföretag", p: ["bygg"] },
+    { n: 70, name: "Weconstruct Jönköping AB", why: "", p: ["bygg"] },
+    { n: 71, name: "Kitron AB", why: "Elektroniktillverkning", p: ["maskin"] },
+    { n: 72, name: "Kalmar Solutions AB", why: "", p: ["data", "industri", "maskin"] },
+    { n: 73, name: "Flokk AB", why: "Kontorsmöbler och stolar", p: ["data", "industri", "maskin"] },
+    { n: 74, name: "Tecca AB + T-Emballage", why: "", p: ["bygg", "industri"] },
+    { n: 75, name: "Sensys Gatso Sweden AB", why: "Trafikövervakning", p: ["data", "maskin"] },
+    { n: 76, name: "Kongsberg Automotive AB", why: "Fordonskomponenter", p: ["maskin"] },
+    { n: 77, name: "Bellmer Cellwood", why: "", p: ["maskin"] },
+    { n: 78, name: "Addstaff", why: "Bemanning", p: ["bygg", "data", "industri", "maskin"] },
+    { n: 79, name: "Hifab AB", why: "", p: ["bygg"] },
+    { n: 80, name: "Unga Akademiker", why: "", p: ["bygg", "data", "industri", "maskin"] },
+    { n: 81, name: "GEODIS", why: "Logistik", p: ["industri"] },
+    { n: 82, name: "ITAB Group AB", why: "Butiksinredning och inredningskoncept", p: ["bygg", "data", "industri", "maskin"] },
+    { n: 83, name: "Conservator Fuktreducering Svenska AB", why: "", p: ["bygg"] },
+    { n: 84, name: "Pontarius AB", why: "", p: ["bygg"] },
+    { n: 85, name: "NCC Sverige AB", why: "", p: ["bygg", "data", "industri"] },
+    { n: 86, name: "Elgiganten Logistik AB", why: "", p: ["industri"] },
+    { n: 87, name: "Rapid Granulator AB", why: "Granulatorer", p: ["industri", "maskin"] },
+    { n: 88, name: "Tyréns Sverige AB", why: "", p: ["bygg"] },
+    { n: 89, name: "Magna Electronics Sweden", why: "Fordonselektronik", p: ["industri", "maskin"] },
+    { n: 90, name: "Soliber Ingenjörer AB", why: "", p: ["bygg"] },
+    { n: 91, name: "Habo kommun", why: "", p: ["data"] },
+    { n: 92, name: "PS Retail", why: "", p: ["bygg", "industri", "maskin"] },
+    { n: 93, name: "Norconsult Sverige AB", why: "", p: ["bygg"] },
+    { n: 94, name: "EAB AB", why: "", p: ["bygg", "data", "maskin"] },
+    { n: 95, name: "Contruster Engineering AB", why: "", p: ["bygg"] },
+    { n: 96, name: "BSV Arkitekter & Ingenjörer AB", why: "", p: ["bygg"] },
+    { n: 97, name: "Industrilås i Nässjö Aktiebolag", why: "Lås och beslag, bland annat till möbler", p: ["data", "industri", "maskin"] },
+    { n: 98, name: "Sveriges Ingenjörer", why: "Fackförbund", p: ["bygg", "data", "industri", "maskin"] },
+    { n: 99, name: "Volvo TTI", why: "Fordonstest", p: ["industri", "maskin"] },
+    { n: 100, name: "Volvo Group Digital & IT", why: "IT", p: ["data"] },
+    { n: 101, name: "AFRY Industry", why: "Teknikkonsult", p: ["industri", "maskin"] },
+    { n: 102, name: "AFRY Infrastructure", why: "", p: ["bygg"] },
+    { n: 103, name: "Elektroautomatik", why: "", p: ["data", "industri", "maskin"] },
+    { n: 104, name: "Byggföretagen", why: "", p: ["bygg", "industri"] },
+    { n: 105, name: "CEJN", why: "Snabbkopplingar", p: ["industri", "maskin"] },
+    { n: 106, name: "Farsight", why: "", p: ["data"] },
+    { n: 107, name: "Horse Powertrain", why: "Drivlinor", p: ["industri", "maskin"] }
   ];
 
-  var KEY = "karriarum2026-mobeldesign";
+  var KEY = "karriarum2026-mobeldesign"; // gammalt namn, behålls så att bockarna finns kvar
   var state = {};
   try { state = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { state = {}; }
   var filter = "all";
@@ -405,7 +406,7 @@
 
   companies.forEach(function (c) {
     var li = document.createElement("li");
-    li.className = "item " + (c.x === 1 ? "strong" : c.x === 2 ? "pot" : "maybe");
+    li.className = "item maybe";
     li.dataset.n = c.n;
     li.innerHTML =
       '<button type="button" class="num" aria-label="Visa monter ' + c.n + ' på kartan">' + c.n + '<small>Karta</small></button>' +
@@ -414,7 +415,9 @@
           '<label for="c' + c.n + '">' +
             '<div class="name">' + c.name + '</div>' +
             (c.why ? '<div class="why">' + c.why + '</div>' : '') +
-            '<span class="tag">' + (c.x === 1 ? "Möbel / inredning" : c.x === 2 ? "Möjligen möbel" : progLabel(c)) + '</span>' +
+            '<span class="tag"></span>' +
+            '<span class="dots" role="img" aria-label="Söker: ' + progLabel(c) + '" title="' + progLabel(c) + '">' +
+              c.p.map(function (k) { return '<i class="d-' + k + '"></i>'; }).join("") + '</span>' +
           '</label>' +
           '<input type="checkbox" id="c' + c.n + '" aria-label="Besökt: ' + c.name + '">' +
         '</div>' +
@@ -445,19 +448,38 @@
   });
 
   function byNum(n) { return companies.filter(function (x) { return x.n == n; })[0]; }
-  var prog = "maskin", status = "all";
-  function inProg(c) {
-    if (prog === "mobel") return c.x >= 1;
-    return prog === "alla" || c.p.indexOf(prog) !== -1 || (prog === "maskin" && c.x === 1);
-  }
+  var status = "all";
+  var progSel = document.getElementById("prog");
+  Object.keys(PROGS).forEach(function (g) {
+    var og = document.createElement("optgroup");
+    og.label = PL[g];
+    [g].concat(PROGS[g].map(function (p) { return g + "|" + p; })).forEach(function (v) {
+      og.appendChild(new Option(v === g ? "Hela gruppen " + PL[g] : v.split("|")[1], v));
+    });
+    progSel.appendChild(og);
+  });
+  try { progSel.value = localStorage.getItem(KEY + "-prog") || ""; } catch (e) {}
+  if (progSel.selectedIndex < 0) progSel.value = "";
+  var prog = progSel.value.split("|")[0];
+  progSel.addEventListener("change", function () {
+    prog = progSel.value.split("|")[0];
+    try { localStorage.setItem(KEY + "-prog", progSel.value); } catch (e) {}
+    update();
+  });
+  function inProg(c) { return !prog || c.p.indexOf(prog) !== -1; }
+  // Måste = företaget söker bara din färggrupp
+  function isMust(c) { return !!prog && c.p.length === 1 && c.p[0] === prog; }
   function update() {
     var done = 0, total = 0, shown = 0;
     document.querySelectorAll(".item").forEach(function (li) {
       var c = byNum(li.dataset.n);
       var isDone = !!(state[c.n] && state[c.n].done);
-      var pm = inProg(c);
+      var pm = inProg(c), must = isMust(c);
+      li.classList.toggle("strong", must);
+      li.classList.toggle("maybe", !must);
+      li.querySelector(".tag").textContent = must ? "Måste: söker bara " + PL[prog] : "";
       if (pm) { total++; if (isDone) done++; }
-      var show = pm && (status === "all" || (status === "extra" && c.x === 1) || (status === "todo" && !isDone));
+      var show = pm && (status === "all" || (status === "extra" && must) || (status === "todo" && !isDone));
       li.hidden = !show;
       if (show) shown++;
     });
@@ -480,7 +502,6 @@
       });
     });
   }
-  wire("#progfilters", "data-prog", function (v) { prog = v; });
   wire("#statusfilters", "data-status", function (v) { status = v; });
 
   document.getElementById("reset").addEventListener("click", function () {
@@ -508,7 +529,7 @@
   companies.forEach(function (c) {
     var p = POS[c.n]; if (!p) return;
     var b = document.createElement("button");
-    b.type = "button"; b.className = "pin " + (c.x === 1 ? "strong" : c.x === 2 ? "pot" : "maybe"); b.id = "pin" + c.n;
+    b.type = "button"; b.className = "pin maybe"; b.id = "pin" + c.n;
     b.style.left = p[0] + "%"; b.style.top = p[1] + "%";
     b.textContent = c.n;
     b.setAttribute("aria-label", "Monter " + c.n + ", " + c.name);
@@ -520,6 +541,8 @@
     companies.forEach(function (c) {
       var b = document.getElementById("pin" + c.n); if (!b) return;
       b.hidden = !inProg(c);
+      b.classList.toggle("strong", isMust(c));
+      b.classList.toggle("maybe", !isMust(c));
       b.classList.toggle("done", isDone(c.n));
       b.classList.toggle("sel", selected === c.n);
     });

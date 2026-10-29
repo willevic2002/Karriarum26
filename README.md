@@ -1,6 +1,6 @@
-# Karriärum 2026 – Möbeldesign
+# Karriärum 2026
 
-Checklista och karta över Karriärum 2026 med filter per utbildning.
+Checklista och karta över Karriärum 2026 med filter per utbildning (färggrupperna från mässans karta). "Måste" = företaget söker bara din grupp.
 Allt ligger i `index.html`. Bockar och anteckningar sparas i webbläsaren.
 
 ## Lägga ut på GitHub Pages
