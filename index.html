@@ -222,7 +222,7 @@
 
 <header>
   <h1>Karriärum 2026</h1>
-  <p>Välj din utbildning för att se vilka företag som söker den. Färgprickarna är samma som på mässans karta. <b>Måste</b> betyder att företaget bara söker din grupp.</p>
+  <p>Välj din utbildning för att se vilka företag som söker den. Färgprickarna är samma som på mässans karta. <b>Måste</b> betyder att företaget bara söker din grupp, eller för vissa program att vi har handplockat dem.</p>
 </header>
 
 <div class="sticky">
@@ -278,9 +278,55 @@
   // Programmen per färggrupp, enligt mässans karta
   var PROGS = {
     bygg: ["Byggnadsutformning med arkitektur", "Civilingenjör i Byggnadsteknik", "Husbyggnadsteknik/Väg- och vattenbyggnadsteknik", "Ljusdesign och belysningsteknik", "Sustainable Building Information Management"],
-    data: ["AI Engineering", "Civilingenjör i datateknik", "Cybersecurity", "Grafisk design och webbutveckling", "Inbyggda system", "Mjukvaruutveckling och mobila plattformar", "Nätverk, infrastruktur och cybersäkerhet", "Software Engineering for AI", "User Experience Design"],
+    data: ["AI Engineering", "Civilingenjör i datateknik", "Cybersecurity", "Grafisk design och webbutveckling", "Inbyggda system", "Mjukvaruutveckling och mobila plattformar", "Nätverk, infrastruktur och cybersäkerhet", "Software Engineering for AI", "User Experience Design", "New Media Design"],
     industri: ["Logistik och Ledning", "Supply Chain Operations Management", "Sustainable Supply Chain Management"],
     maskin: ["3D-teknik", "Civilingenjör i industriell produktframtagning", "Digital Product Development", "Industriell ekonomi och produktionsledning", "Industrial Design", "Materials Engineering for the Manufacturing Industry", "Production Engineering and Automation", "Produktutveckling och design", "Produktutveckling med möbeldesign"]
+  };
+  // Handplockat för vissa program (research okt 2026). Ersätter färgregeln för måsten.
+  var PICKS = {
+    "maskin|Produktutveckling med möbeldesign": {
+      must: {
+        73: "Kontorsstolar (HÅG, RH), fabrik i Nässjö",
+        82: "Utvecklar och designar butiksinredning, HK i Jönköping",
+        92: "Butiks- och displayinredning, t.ex. åt Thule och Fjällräven",
+        1: "Bilstolar, sittkomfort",
+        37: "Innerdörrar i trä, utveckling i Forserum"
+      },
+      rel: {
+        64: "Industridesign i Husqvarnas Global Design",
+        2: "Produktdesign och utveckling",
+        3: "Design av armaturer för inomhusmiljöer",
+        4: "Utvecklar och tillverkar dörrar",
+        76: "Nackstöd och interiördetaljer till fordon",
+        47: "Förnybara material av trä och fiber",
+        59: "Hjul, bland annat till möbler och utrustning",
+        24: "Produktutvecklingskonsult",
+        35: "Produktutvecklingskonsult",
+        22: "Produktutvecklingskonsult",
+        31: "Produkt- och produktionsutveckling",
+        101: "Produktutvecklingskonsult"
+      }
+    },
+    "data|New Media Design": {
+      must: {
+        64: "UX/UI-design i Husqvarnas Global Design, Huskvarna",
+        43: "IT-konsult med UX/UI, HK i Jönköping"
+      },
+      rel: {
+        35: "Service- och UX-design, teknisk kommunikation",
+        60: "Sigma Technology har UX, design och teknisk information i Jönköping",
+        61: "Sigma Technology har UX, design och teknisk information i Jönköping",
+        23: "Rekryterar bland annat UX/UI-designers",
+        30: "Rekrytering inom IT och tech",
+        82: "Brand- och retaildesign",
+        57: "Kreativ studio",
+        63: "Kommunikation och webb i kommunen",
+        40: "Mjukvaruprodukter för byggbranschen",
+        12: "Webb- och systemutveckling",
+        100: "Digitala tjänster inom Volvo",
+        26: "Om du vill starta eget"
+      }
+    }
   };
   function progLabel(c) { return c.p.length ? c.p.map(function (k) { return PL[k]; }).join(" · ") : "Utbildning okänd"; }
   var companies = [
@@ -466,9 +512,15 @@
     try { localStorage.setItem(KEY + "-prog", progSel.value); } catch (e) {}
     update();
   });
-  function inProg(c) { return !prog || c.p.indexOf(prog) !== -1; }
+  function picks() { return PICKS[progSel.value]; }
+  function inProg(c) { var pk = picks(); return !prog || c.p.indexOf(prog) !== -1 || !!(pk && (pk.must[c.n] || pk.rel[c.n])); }
   // Måste = företaget söker bara din färggrupp
-  function isMust(c) { return !!prog && c.p.length === 1 && c.p[0] === prog; }
+  function isMust(c) { var pk = picks(); return pk ? !!pk.must[c.n] : !!prog && c.p.length === 1 && c.p[0] === prog; }
+  function tagText(c) {
+    var pk = picks();
+    if (pk) return pk.must[c.n] ? "Måste: " + pk.must[c.n] : pk.rel[c.n] ? "Bra match: " + pk.rel[c.n] : "";
+    return isMust(c) ? "Måste: söker bara " + PL[prog] : "";
+  }
   function update() {
     var done = 0, total = 0, shown = 0;
     document.querySelectorAll(".item").forEach(function (li) {
@@ -477,7 +529,7 @@
       var pm = inProg(c), must = isMust(c);
       li.classList.toggle("strong", must);
       li.classList.toggle("maybe", !must);
-      li.querySelector(".tag").textContent = must ? "Måste: söker bara " + PL[prog] : "";
+      li.querySelector(".tag").textContent = tagText(c);
       if (pm) { total++; if (isDone) done++; }
       var show = pm && (status === "all" || (status === "extra" && must) || (status === "todo" && !isDone));
       li.hidden = !show;
