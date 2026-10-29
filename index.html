@@ -139,6 +139,11 @@
     border: solid #fff; border-width: 0 3px 3px 0;
     transform: rotate(45deg) translate(-1px, -1px);
   }
+  .star {
+    width: 32px; height: 32px; flex: none; padding: 0; border: 0; background: none;
+    font-size: 1.5rem; line-height: 1; color: var(--muted); cursor: pointer;
+  }
+  .star[aria-pressed="true"] { color: var(--strong); }
   input[type="checkbox"]:focus-visible, button:focus-visible, textarea:focus-visible {
     outline: 3px solid var(--accent); outline-offset: 2px;
   }
@@ -222,7 +227,7 @@
 
 <header>
   <h1>Karriärum 2026</h1>
-  <p>Välj din utbildning för att se vilka företag som söker den. Färgprickarna är samma som på mässans karta. <b>Måste</b> betyder att företaget bara söker din grupp, eller för vissa program att vi har handplockat dem.</p>
+  <p>Välj din utbildning för att se vilka företag som söker den. Färgprickarna är samma som på mässans karta. Tryck på ★ för att lägga till egna måsten. <b>Måste</b> betyder att företaget bara söker din grupp, eller för vissa program att vi har handplockat dem.</p>
 </header>
 
 <div class="sticky">
@@ -468,6 +473,7 @@
             '<span class="dots" role="img" aria-label="Söker: ' + progLabel(c) + '" title="' + progLabel(c) + '">' +
               c.p.map(function (k) { return '<i class="d-' + k + '"></i>'; }).join("") + '</span>' +
           '</label>' +
+          '<button type="button" class="star" aria-pressed="false" aria-label="Mitt måste: ' + c.name + '" title="Lägg till som mitt måste">★</button>' +
           '<input type="checkbox" id="c' + c.n + '" aria-label="Besökt: ' + c.name + '">' +
         '</div>' +
         '<textarea rows="1" placeholder="Anteckningar, t.ex. kontaktperson eller praktikplats" aria-label="Anteckningar för ' + c.name + '"></textarea>' +
@@ -488,6 +494,11 @@
       state[c.n].done = box.checked;
       li.classList.toggle("done", box.checked);
       save(); update(); refreshPins();
+    });
+    li.querySelector(".star").addEventListener("click", function () {
+      state[c.n] = state[c.n] || {};
+      state[c.n].star = !state[c.n].star;
+      save(); update();
     });
     note.addEventListener("input", function () {
       state[c.n] = state[c.n] || {};
@@ -516,11 +527,13 @@
     update();
   });
   function picks() { return PICKS[progSel.value]; }
-  function inProg(c) { var pk = picks(); return !prog || c.p.indexOf(prog) !== -1 || !!(pk && (pk.must[c.n] || pk.rel[c.n])); }
+  function isStar(c) { return !!(state[c.n] && state[c.n].star); }
+  function inProg(c) { var pk = picks(); return !prog || isStar(c) || c.p.indexOf(prog) !== -1 || !!(pk && (pk.must[c.n] || pk.rel[c.n])); }
   // Måste = företaget söker bara din färggrupp
-  function isMust(c) { var pk = picks(); return pk ? !!pk.must[c.n] : !!prog && c.p.length === 1 && c.p[0] === prog; }
+  function isMust(c) { var pk = picks(); return isStar(c) ? true : pk ? !!pk.must[c.n] : !!prog && c.p.length === 1 && c.p[0] === prog; }
   function tagText(c) {
     var pk = picks();
+    if (isStar(c)) return "Mitt måste";
     if (pk) return pk.must[c.n] ? "Måste: " + pk.must[c.n] : pk.rel[c.n] ? "Bra match: " + pk.rel[c.n] : "";
     return isMust(c) ? "Måste: söker bara " + PL[prog] : "";
   }
@@ -533,6 +546,7 @@
       li.classList.toggle("strong", must);
       li.classList.toggle("maybe", !must);
       li.querySelector(".tag").textContent = tagText(c);
+      li.querySelector(".star").setAttribute("aria-pressed", isStar(c) ? "true" : "false");
       if (pm) { total++; if (isDone) done++; }
       var show = pm && (status === "all" || (status === "extra" && must) || (status === "todo" && !isDone));
       li.hidden = !show;
