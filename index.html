@@ -157,6 +157,29 @@
     border: 1px solid var(--line); border-radius: 7px;
     padding: 7px 9px; resize: vertical; min-height: 38px;
   }
+  .noterow { display: flex; gap: 8px; align-items: flex-start; margin-top: 8px; }
+  .noterow textarea { margin-top: 0; flex: 1; min-width: 0; }
+  .qrbtn {
+    flex: none; height: 38px; padding: 0 10px; border-radius: 7px; cursor: pointer;
+    font: inherit; font-size: 0.8rem; font-weight: 700;
+    border: 1px solid var(--line); background: var(--bg); color: var(--accent);
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .qrbtn svg { width: 18px; height: 18px; }
+  .links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .links:empty { display: none; }
+  .links a {
+    font-size: 0.8rem; color: var(--accent); background: var(--maybe-bg);
+    padding: 4px 9px; border-radius: 99px; text-decoration: none;
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .toast {
+    position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0)); z-index: 40;
+    transform: translateX(-50%); max-width: calc(100% - 32px);
+    background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px;
+    font-size: 0.88rem; box-shadow: 0 4px 16px rgba(0,0,0,.25);
+  }
+  .toast[hidden] { display: none; }
   .reset {
     display: block; margin: 26px auto 0;
     font: inherit; font-size: 0.85rem; color: var(--muted);
@@ -534,7 +557,12 @@
           '<button type="button" class="star" aria-pressed="false" aria-label="Mitt måste: ' + c.name + '" title="Lägg till som mitt måste">★</button>' +
           '<input type="checkbox" id="c' + c.n + '" aria-label="Besökt: ' + c.name + '">' +
         '</div>' +
-        '<textarea rows="1" placeholder="Anteckningar, t.ex. kontaktperson eller praktikplats" aria-label="Anteckningar för ' + c.name + '"></textarea>' +
+        '<div class="noterow">' +
+          '<textarea rows="1" placeholder="Anteckningar, t.ex. kontaktperson eller praktikplats" aria-label="Anteckningar för ' + c.name + '"></textarea>' +
+          '<button type="button" class="qrbtn" aria-label="Skanna QR-kod för ' + c.name + '" title="Skanna QR-kod">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M14 21h7v-4"/></svg>QR</button>' +
+        '</div>' +
+        '<div class="links"></div>' +
       '</div>';
     list.appendChild(li);
 
@@ -562,6 +590,113 @@
       state[c.n] = state[c.n] || {};
       state[c.n].note = note.value;
       save();
+      renderLinks(li, note.value);
+    });
+    renderLinks(li, note.value);
+    autosize(note);
+    li.querySelector(".qrbtn").addEventListener("click", function () { startScan(c.n); });
+  });
+
+  // Länkar i anteckningar blir klickbara
+  function findLinks(text) {
+    var m = (text || "").match(/https?:\/\/[^\s<>"']+/gi) || [];
+    return m.map(function (u) { return u.replace(/[.,;:!?)\]]+$/, ""); })
+      .filter(function (u, i, a) { return a.indexOf(u) === i; });
+  }
+  function renderLinks(li, text) {
+    var box = li.querySelector(".links");
+    box.innerHTML = "";
+    findLinks(text).forEach(function (u) {
+      var a = document.createElement("a");
+      a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer";
+      a.textContent = "🔗 " + u.replace(/^https?:\/\/(www\.)?/i, "");
+      box.appendChild(a);
+    });
+  }
+  function autosize(t) {
+    t.style.height = "auto";
+    t.style.height = Math.max(38, t.scrollHeight + 2) + "px";
+  }
+  document.addEventListener("input", function (e) { if (e.target.matches(".item textarea")) autosize(e.target); });
+
+  // QR-skanning: tar ett foto (eller väljer en bild) och läser koden
+  var toastEl = document.createElement("div");
+  toastEl.className = "toast"; toastEl.hidden = true; toastEl.setAttribute("role", "status");
+  document.body.appendChild(toastEl);
+  var toastTimer;
+  function toast(msg, ms) {
+    toastEl.textContent = msg; toastEl.hidden = false;
+    clearTimeout(toastTimer);
+    if (ms !== 0) toastTimer = setTimeout(function () { toastEl.hidden = true; }, ms || 3000);
+  }
+
+  var qrInput = document.createElement("input");
+  qrInput.type = "file"; qrInput.accept = "image/*"; qrInput.hidden = true;
+  document.body.appendChild(qrInput);
+  var scanFor = null;
+  function startScan(n) { scanFor = n; qrInput.value = ""; qrInput.click(); }
+
+  var jsqrLoading = null;
+  function loadJsQR() {
+    if (window.jsQR) return Promise.resolve();
+    if (!jsqrLoading) jsqrLoading = new Promise(function (ok, fail) {
+      var s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js";
+      s.onload = ok; s.onerror = function () { jsqrLoading = null; fail(); };
+      document.head.appendChild(s);
+    });
+    return jsqrLoading;
+  }
+  function loadImage(file) {
+    return new Promise(function (ok, fail) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () { ok(img); URL.revokeObjectURL(url); };
+      img.onerror = function () { fail(); URL.revokeObjectURL(url); };
+      img.src = url;
+    });
+  }
+  function decode(img) {
+    // Webbläsarens egen läsare först (Chrome/Android), annars jsQR (t.ex. iPhone)
+    var native = ("BarcodeDetector" in window)
+      ? new BarcodeDetector({ formats: ["qr_code"] }).detect(img)
+          .then(function (r) { return r.length ? r[0].rawValue : null; })
+          .catch(function () { return null; })
+      : Promise.resolve(null);
+    return native.then(function (v) {
+      if (v) return v;
+      return loadJsQR().then(function () {
+        var sizes = [1000, 1600, 600];
+        for (var i = 0; i < sizes.length; i++) {
+          var scale = Math.min(1, sizes[i] / Math.max(img.naturalWidth, img.naturalHeight));
+          var w = Math.round(img.naturalWidth * scale), h = Math.round(img.naturalHeight * scale);
+          var cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+          var ctx = cv.getContext("2d"); ctx.drawImage(img, 0, 0, w, h);
+          var r = jsQR(ctx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: "attemptBoth" });
+          if (r && r.data) return r.data;
+        }
+        return null;
+      });
+    });
+  }
+  qrInput.addEventListener("change", function () {
+    var file = qrInput.files && qrInput.files[0];
+    var n = scanFor;
+    if (!file || !n) return;
+    toast("Läser QR-koden…", 0);
+    loadImage(file).then(decode).then(function (value) {
+      if (!value) { toast("Hittade ingen QR-kod. Ta en närmare och skarpare bild."); return; }
+      var li = list.querySelector('.item[data-n="' + n + '"]');
+      var note = li.querySelector("textarea");
+      var cur = note.value.replace(/\s+$/, "");
+      if (cur.indexOf(value) !== -1) { toast("Länken finns redan i anteckningen."); return; }
+      note.value = (cur ? cur + "\n" : "") + value;
+      state[n] = state[n] || {};
+      state[n].note = note.value;
+      save(); renderLinks(li, note.value); autosize(note);
+      toast(/^https?:\/\//i.test(value) ? "Länk sparad i anteckningen ✓" : "QR-text sparad i anteckningen ✓");
+    }).catch(function () {
+      toast("Kunde inte läsa bilden. Kontrollera nätet och försök igen.");
     });
   });
 
@@ -637,6 +772,8 @@
     document.querySelectorAll(".item").forEach(function (li) {
       li.querySelector("input").checked = false;
       li.querySelector("textarea").value = "";
+      autosize(li.querySelector("textarea"));
+      renderLinks(li, "");
       li.classList.remove("done");
     });
     update();
