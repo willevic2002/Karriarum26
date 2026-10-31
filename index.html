@@ -166,6 +166,7 @@
   .num small { font-size: 0.62rem; font-weight: 600; letter-spacing: 0; opacity: .85; }
   .num:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
   .filters .mapbtn { margin-left: auto; background: var(--accent); color: #fff; border-color: var(--accent); }
+  .filters .expbtn { border-color: var(--accent); color: var(--accent); font-weight: 600; }
 
   .mapview {
     position: fixed; inset: 0; z-index: 20;
@@ -221,6 +222,40 @@
   .mapbar .cap span { color: var(--muted); font-size: 0.82rem; }
   .mapnote { color: var(--muted); font-size: 0.78rem; padding: 6px 16px; background: var(--bg); border-top: 1px solid var(--line); }
   .empty { text-align: center; color: var(--muted); padding: 30px 0; }
+
+  .exportbtn {
+    display: block; width: 100%; margin-top: 22px;
+    font: inherit; font-size: 0.95rem; font-weight: 600;
+    padding: 12px; border-radius: 10px; cursor: pointer;
+    background: var(--accent); color: #fff; border: 1px solid var(--accent);
+  }
+  .exportview {
+    position: fixed; inset: 0; z-index: 30; background: var(--bg);
+    display: flex; flex-direction: column;
+    padding: env(safe-area-inset-top, 0) 0 env(safe-area-inset-bottom, 0);
+  }
+  .exportview[hidden] { display: none; }
+  .exportview .maptop { max-width: 640px; width: 100%; margin: 0 auto; }
+  .exportbody { flex: 1; display: flex; flex-direction: column; max-width: 640px; width: 100%; margin: 0 auto; padding: 12px 16px; min-height: 0; }
+  .exportbody p { margin: 0 0 8px; color: var(--muted); font-size: 0.85rem; }
+  #exporttext {
+    flex: 1; min-height: 200px; margin: 0; resize: none;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.85rem; line-height: 1.5;
+    background: var(--surface);
+  }
+  .exportactions { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 12px; }
+  .exportactions button {
+    flex: 1; min-width: 110px; font: inherit; font-size: 0.9rem; font-weight: 600;
+    padding: 11px 12px; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  }
+  .exportactions button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  #printout { display: none; }
+  @media print {
+    body > *:not(#printout) { display: none !important; }
+    #printout { display: block !important; white-space: pre-wrap; font-family: Georgia, serif; font-size: 11pt; line-height: 1.5; color: #000; background: #fff; padding: 0; }
+    body { background: #fff; padding: 0; }
+  }
 </style>
 </head>
 <body>
@@ -246,6 +281,7 @@
       <button data-status="extra" aria-pressed="false">Måsten</button>
       <button data-status="todo" aria-pressed="false">Ej besökta</button>
       <button type="button" class="mapbtn" id="openmap">Karta</button>
+      <button type="button" class="expbtn" id="openexport">Exportera</button>
     </div>
   </div>
 </div>
@@ -255,6 +291,23 @@
   <p class="empty" id="empty" hidden>Inga företag matchar filtret.</p>
   <button class="reset" id="reset">Nollställ allt</button>
 </main>
+
+<div class="exportview" id="exportview" hidden role="dialog" aria-label="Exportera">
+  <div class="maptop">
+    <strong>Exportera</strong>
+    <button type="button" id="closeexport">Stäng</button>
+  </div>
+  <div class="exportbody">
+    <p>Besökta företag och alla anteckningar. Kopiera och klistra in i Anteckningar, eller spara som PDF.</p>
+    <textarea id="exporttext" readonly aria-label="Exporterad text"></textarea>
+    <div class="exportactions">
+      <button type="button" class="primary" id="copyexport">Kopiera</button>
+      <button type="button" id="shareexport" hidden>Dela</button>
+      <button type="button" id="pdfexport">Spara som PDF</button>
+    </div>
+  </div>
+</div>
+<div id="printout"></div>
 
 <div class="mapview" id="mapview" hidden role="dialog" aria-label="Karta över montrarna">
   <div class="maptop">
@@ -706,6 +759,80 @@
     var box = document.getElementById("c" + selected);
     box.checked = !box.checked;
     box.dispatchEvent(new Event("change"));
+  });
+
+  // Export som text
+  function buildExport() {
+    var visited = [], notesOnly = [], mustLeft = [];
+    companies.forEach(function (c) {
+      var s = state[c.n] || {};
+      var note = (s.note || "").trim();
+      if (s.done) visited.push({ c: c, note: note });
+      else if (note) notesOnly.push({ c: c, note: note });
+      else if (inProg(c) && isMust(c)) mustLeft.push(c);
+    });
+    function entry(e, mark) {
+      var t = mark + " " + e.c.name + " (monter " + e.c.n + ")";
+      if (e.note) t += "\n   " + e.note.replace(/\n/g, "\n   ");
+      return t;
+    }
+    var d = new Date();
+    var progName = progSel.value ? progSel.options[progSel.selectedIndex].text : "Alla företag";
+    var lines = [
+      "KARRIÄRUM 2026",
+      "Exporterad " + d.toLocaleDateString("sv-SE") + " · " + progName,
+      "Besökta: " + visited.length + " företag",
+      ""
+    ];
+    lines.push("BESÖKTA");
+    lines.push(visited.length ? visited.map(function (e) { return entry(e, "✓"); }).join("\n\n") : "Inga ännu.");
+    if (notesOnly.length) {
+      lines.push("", "ANTECKNINGAR, EJ BESÖKTA");
+      lines.push(notesOnly.map(function (e) { return entry(e, "•"); }).join("\n\n"));
+    }
+    if (mustLeft.length) {
+      lines.push("", "MÅSTEN KVAR ATT BESÖKA");
+      lines.push(mustLeft.map(function (c) { return "○ " + c.name + " (monter " + c.n + ")"; }).join("\n"));
+    }
+    return lines.join("\n");
+  }
+
+  var exportview = document.getElementById("exportview");
+  var exporttext = document.getElementById("exporttext");
+  var copybtn = document.getElementById("copyexport");
+  var sharebtn = document.getElementById("shareexport");
+  if (navigator.share) sharebtn.hidden = false;
+
+  document.getElementById("openexport").addEventListener("click", function () {
+    exporttext.value = buildExport();
+    copybtn.textContent = "Kopiera";
+    exportview.hidden = false;
+    document.body.style.overflow = "hidden";
+  });
+  document.getElementById("closeexport").addEventListener("click", function () {
+    exportview.hidden = true;
+    document.body.style.overflow = "";
+  });
+  copybtn.addEventListener("click", function () {
+    var text = exporttext.value;
+    function fallback() {
+      exporttext.focus();
+      exporttext.select();
+      exporttext.setSelectionRange(0, text.length);
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) {}
+      copybtn.textContent = ok ? "Kopierat ✓" : "Markerat, kopiera manuellt";
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { copybtn.textContent = "Kopierat ✓"; }, fallback);
+    } else fallback();
+  });
+  sharebtn.addEventListener("click", function () {
+    navigator.share({ title: "Karriärum 2026", text: exporttext.value }).catch(function () {});
+  });
+  document.getElementById("pdfexport").addEventListener("click", function () {
+    document.getElementById("printout").textContent = exporttext.value;
+    window.print();
   });
 
   update();
