@@ -157,6 +157,29 @@
     border: 1px solid var(--line); border-radius: 7px;
     padding: 7px 9px; resize: vertical; min-height: 38px;
   }
+  .noterow { display: flex; gap: 8px; align-items: flex-start; margin-top: 8px; }
+  .noterow textarea { margin-top: 0; flex: 1; min-width: 0; }
+  .qrbtn {
+    flex: none; height: 38px; padding: 0 10px; border-radius: 7px; cursor: pointer;
+    font: inherit; font-size: 0.8rem; font-weight: 700;
+    border: 1px solid var(--line); background: var(--bg); color: var(--accent);
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .qrbtn svg { width: 18px; height: 18px; }
+  .links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .links:empty { display: none; }
+  .links a {
+    font-size: 0.8rem; color: var(--accent); background: var(--maybe-bg);
+    padding: 4px 9px; border-radius: 99px; text-decoration: none;
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .toast {
+    position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0)); z-index: 40;
+    transform: translateX(-50%); max-width: calc(100% - 32px);
+    background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px;
+    font-size: 0.88rem; box-shadow: 0 4px 16px rgba(0,0,0,.25);
+  }
+  .toast[hidden] { display: none; }
   .reset {
     display: block; margin: 26px auto 0;
     font: inherit; font-size: 0.85rem; color: var(--muted);
@@ -166,6 +189,7 @@
   .num small { font-size: 0.62rem; font-weight: 600; letter-spacing: 0; opacity: .85; }
   .num:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
   .filters .mapbtn { margin-left: auto; background: var(--accent); color: #fff; border-color: var(--accent); }
+  .filters .expbtn { border-color: var(--accent); color: var(--accent); font-weight: 600; }
 
   .mapview {
     position: fixed; inset: 0; z-index: 20;
@@ -221,6 +245,40 @@
   .mapbar .cap span { color: var(--muted); font-size: 0.82rem; }
   .mapnote { color: var(--muted); font-size: 0.78rem; padding: 6px 16px; background: var(--bg); border-top: 1px solid var(--line); }
   .empty { text-align: center; color: var(--muted); padding: 30px 0; }
+
+  .exportbtn {
+    display: block; width: 100%; margin-top: 22px;
+    font: inherit; font-size: 0.95rem; font-weight: 600;
+    padding: 12px; border-radius: 10px; cursor: pointer;
+    background: var(--accent); color: #fff; border: 1px solid var(--accent);
+  }
+  .exportview {
+    position: fixed; inset: 0; z-index: 30; background: var(--bg);
+    display: flex; flex-direction: column;
+    padding: env(safe-area-inset-top, 0) 0 env(safe-area-inset-bottom, 0);
+  }
+  .exportview[hidden] { display: none; }
+  .exportview .maptop { max-width: 640px; width: 100%; margin: 0 auto; }
+  .exportbody { flex: 1; display: flex; flex-direction: column; max-width: 640px; width: 100%; margin: 0 auto; padding: 12px 16px; min-height: 0; }
+  .exportbody p { margin: 0 0 8px; color: var(--muted); font-size: 0.85rem; }
+  #exporttext {
+    flex: 1; min-height: 200px; margin: 0; resize: none;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.85rem; line-height: 1.5;
+    background: var(--surface);
+  }
+  .exportactions { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 12px; }
+  .exportactions button {
+    flex: 1; min-width: 110px; font: inherit; font-size: 0.9rem; font-weight: 600;
+    padding: 11px 12px; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  }
+  .exportactions button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  #printout { display: none; }
+  @media print {
+    body > *:not(#printout) { display: none !important; }
+    #printout { display: block !important; white-space: pre-wrap; font-family: Georgia, serif; font-size: 11pt; line-height: 1.5; color: #000; background: #fff; padding: 0; }
+    body { background: #fff; padding: 0; }
+  }
 </style>
 </head>
 <body>
@@ -246,6 +304,7 @@
       <button data-status="extra" aria-pressed="false">Måsten</button>
       <button data-status="todo" aria-pressed="false">Ej besökta</button>
       <button type="button" class="mapbtn" id="openmap">Karta</button>
+      <button type="button" class="expbtn" id="openexport">Exportera</button>
     </div>
   </div>
 </div>
@@ -255,6 +314,23 @@
   <p class="empty" id="empty" hidden>Inga företag matchar filtret.</p>
   <button class="reset" id="reset">Nollställ allt</button>
 </main>
+
+<div class="exportview" id="exportview" hidden role="dialog" aria-label="Exportera">
+  <div class="maptop">
+    <strong>Exportera</strong>
+    <button type="button" id="closeexport">Stäng</button>
+  </div>
+  <div class="exportbody">
+    <p>Besökta företag och alla anteckningar. Kopiera och klistra in i Anteckningar, eller spara som PDF.</p>
+    <textarea id="exporttext" readonly aria-label="Exporterad text"></textarea>
+    <div class="exportactions">
+      <button type="button" class="primary" id="copyexport">Kopiera</button>
+      <button type="button" id="shareexport" hidden>Dela</button>
+      <button type="button" id="pdfexport">Spara som PDF</button>
+    </div>
+  </div>
+</div>
+<div id="printout"></div>
 
 <div class="mapview" id="mapview" hidden role="dialog" aria-label="Karta över montrarna">
   <div class="maptop">
@@ -481,7 +557,12 @@
           '<button type="button" class="star" aria-pressed="false" aria-label="Mitt måste: ' + c.name + '" title="Lägg till som mitt måste">★</button>' +
           '<input type="checkbox" id="c' + c.n + '" aria-label="Besökt: ' + c.name + '">' +
         '</div>' +
-        '<textarea rows="1" placeholder="Anteckningar, t.ex. kontaktperson eller praktikplats" aria-label="Anteckningar för ' + c.name + '"></textarea>' +
+        '<div class="noterow">' +
+          '<textarea rows="1" placeholder="Anteckningar, t.ex. kontaktperson eller praktikplats" aria-label="Anteckningar för ' + c.name + '"></textarea>' +
+          '<button type="button" class="qrbtn" aria-label="Skanna QR-kod för ' + c.name + '" title="Skanna QR-kod">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M14 21h7v-4"/></svg>QR</button>' +
+        '</div>' +
+        '<div class="links"></div>' +
       '</div>';
     list.appendChild(li);
 
@@ -509,6 +590,113 @@
       state[c.n] = state[c.n] || {};
       state[c.n].note = note.value;
       save();
+      renderLinks(li, note.value);
+    });
+    renderLinks(li, note.value);
+    autosize(note);
+    li.querySelector(".qrbtn").addEventListener("click", function () { startScan(c.n); });
+  });
+
+  // Länkar i anteckningar blir klickbara
+  function findLinks(text) {
+    var m = (text || "").match(/https?:\/\/[^\s<>"']+/gi) || [];
+    return m.map(function (u) { return u.replace(/[.,;:!?)\]]+$/, ""); })
+      .filter(function (u, i, a) { return a.indexOf(u) === i; });
+  }
+  function renderLinks(li, text) {
+    var box = li.querySelector(".links");
+    box.innerHTML = "";
+    findLinks(text).forEach(function (u) {
+      var a = document.createElement("a");
+      a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer";
+      a.textContent = "🔗 " + u.replace(/^https?:\/\/(www\.)?/i, "");
+      box.appendChild(a);
+    });
+  }
+  function autosize(t) {
+    t.style.height = "auto";
+    t.style.height = Math.max(38, t.scrollHeight + 2) + "px";
+  }
+  document.addEventListener("input", function (e) { if (e.target.matches(".item textarea")) autosize(e.target); });
+
+  // QR-skanning: tar ett foto (eller väljer en bild) och läser koden
+  var toastEl = document.createElement("div");
+  toastEl.className = "toast"; toastEl.hidden = true; toastEl.setAttribute("role", "status");
+  document.body.appendChild(toastEl);
+  var toastTimer;
+  function toast(msg, ms) {
+    toastEl.textContent = msg; toastEl.hidden = false;
+    clearTimeout(toastTimer);
+    if (ms !== 0) toastTimer = setTimeout(function () { toastEl.hidden = true; }, ms || 3000);
+  }
+
+  var qrInput = document.createElement("input");
+  qrInput.type = "file"; qrInput.accept = "image/*"; qrInput.hidden = true;
+  document.body.appendChild(qrInput);
+  var scanFor = null;
+  function startScan(n) { scanFor = n; qrInput.value = ""; qrInput.click(); }
+
+  var jsqrLoading = null;
+  function loadJsQR() {
+    if (window.jsQR) return Promise.resolve();
+    if (!jsqrLoading) jsqrLoading = new Promise(function (ok, fail) {
+      var s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js";
+      s.onload = ok; s.onerror = function () { jsqrLoading = null; fail(); };
+      document.head.appendChild(s);
+    });
+    return jsqrLoading;
+  }
+  function loadImage(file) {
+    return new Promise(function (ok, fail) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () { ok(img); URL.revokeObjectURL(url); };
+      img.onerror = function () { fail(); URL.revokeObjectURL(url); };
+      img.src = url;
+    });
+  }
+  function decode(img) {
+    // Webbläsarens egen läsare först (Chrome/Android), annars jsQR (t.ex. iPhone)
+    var native = ("BarcodeDetector" in window)
+      ? new BarcodeDetector({ formats: ["qr_code"] }).detect(img)
+          .then(function (r) { return r.length ? r[0].rawValue : null; })
+          .catch(function () { return null; })
+      : Promise.resolve(null);
+    return native.then(function (v) {
+      if (v) return v;
+      return loadJsQR().then(function () {
+        var sizes = [1000, 1600, 600];
+        for (var i = 0; i < sizes.length; i++) {
+          var scale = Math.min(1, sizes[i] / Math.max(img.naturalWidth, img.naturalHeight));
+          var w = Math.round(img.naturalWidth * scale), h = Math.round(img.naturalHeight * scale);
+          var cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+          var ctx = cv.getContext("2d"); ctx.drawImage(img, 0, 0, w, h);
+          var r = jsQR(ctx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: "attemptBoth" });
+          if (r && r.data) return r.data;
+        }
+        return null;
+      });
+    });
+  }
+  qrInput.addEventListener("change", function () {
+    var file = qrInput.files && qrInput.files[0];
+    var n = scanFor;
+    if (!file || !n) return;
+    toast("Läser QR-koden…", 0);
+    loadImage(file).then(decode).then(function (value) {
+      if (!value) { toast("Hittade ingen QR-kod. Ta en närmare och skarpare bild."); return; }
+      var li = list.querySelector('.item[data-n="' + n + '"]');
+      var note = li.querySelector("textarea");
+      var cur = note.value.replace(/\s+$/, "");
+      if (cur.indexOf(value) !== -1) { toast("Länken finns redan i anteckningen."); return; }
+      note.value = (cur ? cur + "\n" : "") + value;
+      state[n] = state[n] || {};
+      state[n].note = note.value;
+      save(); renderLinks(li, note.value); autosize(note);
+      toast(/^https?:\/\//i.test(value) ? "Länk sparad i anteckningen ✓" : "QR-text sparad i anteckningen ✓");
+    }).catch(function () {
+      toast("Kunde inte läsa bilden. Kontrollera nätet och försök igen.");
     });
   });
 
@@ -584,6 +772,8 @@
     document.querySelectorAll(".item").forEach(function (li) {
       li.querySelector("input").checked = false;
       li.querySelector("textarea").value = "";
+      autosize(li.querySelector("textarea"));
+      renderLinks(li, "");
       li.classList.remove("done");
     });
     update();
@@ -706,6 +896,80 @@
     var box = document.getElementById("c" + selected);
     box.checked = !box.checked;
     box.dispatchEvent(new Event("change"));
+  });
+
+  // Export som text
+  function buildExport() {
+    var visited = [], notesOnly = [], mustLeft = [];
+    companies.forEach(function (c) {
+      var s = state[c.n] || {};
+      var note = (s.note || "").trim();
+      if (s.done) visited.push({ c: c, note: note });
+      else if (note) notesOnly.push({ c: c, note: note });
+      else if (inProg(c) && isMust(c)) mustLeft.push(c);
+    });
+    function entry(e, mark) {
+      var t = mark + " " + e.c.name + " (monter " + e.c.n + ")";
+      if (e.note) t += "\n   " + e.note.replace(/\n/g, "\n   ");
+      return t;
+    }
+    var d = new Date();
+    var progName = progSel.value ? progSel.options[progSel.selectedIndex].text : "Alla företag";
+    var lines = [
+      "KARRIÄRUM 2026",
+      "Exporterad " + d.toLocaleDateString("sv-SE") + " · " + progName,
+      "Besökta: " + visited.length + " företag",
+      ""
+    ];
+    lines.push("BESÖKTA");
+    lines.push(visited.length ? visited.map(function (e) { return entry(e, "✓"); }).join("\n\n") : "Inga ännu.");
+    if (notesOnly.length) {
+      lines.push("", "ANTECKNINGAR, EJ BESÖKTA");
+      lines.push(notesOnly.map(function (e) { return entry(e, "•"); }).join("\n\n"));
+    }
+    if (mustLeft.length) {
+      lines.push("", "MÅSTEN KVAR ATT BESÖKA");
+      lines.push(mustLeft.map(function (c) { return "○ " + c.name + " (monter " + c.n + ")"; }).join("\n"));
+    }
+    return lines.join("\n");
+  }
+
+  var exportview = document.getElementById("exportview");
+  var exporttext = document.getElementById("exporttext");
+  var copybtn = document.getElementById("copyexport");
+  var sharebtn = document.getElementById("shareexport");
+  if (navigator.share) sharebtn.hidden = false;
+
+  document.getElementById("openexport").addEventListener("click", function () {
+    exporttext.value = buildExport();
+    copybtn.textContent = "Kopiera";
+    exportview.hidden = false;
+    document.body.style.overflow = "hidden";
+  });
+  document.getElementById("closeexport").addEventListener("click", function () {
+    exportview.hidden = true;
+    document.body.style.overflow = "";
+  });
+  copybtn.addEventListener("click", function () {
+    var text = exporttext.value;
+    function fallback() {
+      exporttext.focus();
+      exporttext.select();
+      exporttext.setSelectionRange(0, text.length);
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) {}
+      copybtn.textContent = ok ? "Kopierat ✓" : "Markerat, kopiera manuellt";
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { copybtn.textContent = "Kopierat ✓"; }, fallback);
+    } else fallback();
+  });
+  sharebtn.addEventListener("click", function () {
+    navigator.share({ title: "Karriärum 2026", text: exporttext.value }).catch(function () {});
+  });
+  document.getElementById("pdfexport").addEventListener("click", function () {
+    document.getElementById("printout").textContent = exporttext.value;
+    window.print();
   });
 
   update();
